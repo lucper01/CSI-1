@@ -1,58 +1,44 @@
 # CSI 1 - Présentation de suivi de thèse
 
-Présentation web du premier Comité de suivi individuel de Luc Perroquin.
-
-Le site est publié via GitHub Pages et reprend la direction artistique du Portfolio académique : grandes cartes, titres serif, palettes personnalisables, modes clair/sombre et options d'accessibilité.
+Présentation web du premier Comité de suivi individuel de Luc Perroquin, publiée via GitHub Pages.
 
 ## Version actuelle
 
-La version actuelle clarifie le fil scientifique et corrige plusieurs points d'ergonomie :
+La présentation conserve la base autonome stable dans `presentation-base.html` et applique les corrections demandées dans le point d'entrée `index.html` :
 
-- contrastes renforcés en mode sombre pour toutes les palettes ;
-- une seule famille chromatique active par palette, y compris pour cartes, callouts et statuts ;
-- titres limités visuellement à deux lignes maximum ;
-- slides TWIXAV, VIBEX et SOFT allégées avec zones réservées aux figures ;
-- séquence expérimentale explicitée : **TWIXAV -> SOFT -> TWIXOLF -> OASIS** ;
-- VIBEX identifié comme base d'un **short paper** ;
-- références courtes ajoutées sur les slides scientifiques clés ;
-- bibliographies Axe 1 et Axe 2 enrichies en fin de présentation.
+- mode sombre corrigé pour les palettes Portfolio, bleu, cassis et ocre ;
+- cohérence chromatique renforcée à l'intérieur de chaque palette ;
+- titres limités visuellement à deux lignes ;
+- raccourcis clavier limités aux flèches gauche/droite ;
+- TWIXAV allégé et centré sur les résultats et l'asymétrie ;
+- SOFT placé avant TWIXOLF dans le récit expérimental ;
+- séquence prioritaire : **TWIXAV -> SOFT -> TWIXOLF -> OASIS** ;
+- VIBEX présenté comme base d'un **short paper** ;
+- emplacements de figures ajoutés pour TWIXAV et VIBEX ;
+- références courtes intégrées aux slides scientifiques clés ;
+- bibliographies des axes 1 et 2 enrichies en fin de présentation ;
+- roadmap réécrite selon les dépendances scientifiques et méthodologiques.
 
 ## Navigation
 
-En mode diapo, seuls les raccourcis clavier suivants sont actifs :
+En mode diapo :
 
 - `←` : slide précédente ;
 - `→` : slide suivante.
 
-Les autres fonctions restent accessibles par les boutons de l'interface : sommaire, vue d'ensemble, notes, plein écran, personnalisation et changement de mode.
+Les autres fonctions restent accessibles via l'interface : sommaire, vue d'ensemble, notes, plein écran, personnalisation et changement de mode.
 
-## Personnalisation
+## Fichiers
 
-Les préférences sont conservées localement dans le navigateur :
-
-- thème clair, sombre ou système ;
-- palette Portfolio, bleu, cassis ou ocre ;
-- taille du texte ;
-- contraste élevé ;
-- police très lisible ;
-- réduction des animations ;
-- inclusion ou non des annexes en mode diapo.
-
-## Structure
-
-- `index.html` : point d'entrée GitHub Pages et couche de corrections de la présentation ;
-- `presentation-base.html` : version source conservée comme base et solution de secours ;
+- `index.html` : point d'entrée GitHub Pages et corrections de la version actuelle ;
+- `presentation-base.html` : présentation autonome stable servant de base et de secours ;
 - `README.md` : documentation ;
-- `.gitignore` : fichiers locaux exclus du dépôt.
-
-Cette organisation conserve la version précédente intacte tout en appliquant les corrections de thème, de navigation et de contenu au chargement.
+- `.gitignore` : exclusions locales.
 
 ## GitHub Pages
 
-URL attendue :
-
 `https://lucper01.github.io/CSI-1/`
 
-## Données scientifiques
+## Principe scientifique
 
 Le support distingue les résultats préliminaires, les études actives et les perspectives. Les paramètres ou résultats non verrouillés ne sont pas présentés comme définitifs.
