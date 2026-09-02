@@ -15,6 +15,14 @@ La présentation a été réorganisée pour éviter la répétition entre les di
 
 Les détails techniques sont déplacés dans des annexes afin de conserver un oral fluide sans perdre l'information.
 
+## Mémoires de M1 associés
+
+Certaines études ont également servi de support à des mémoires de Master 1, mentionnés directement sur les diapositives concernées :
+
+- **VIBEX** - mémoire de M1 d'Olivia ;
+- **TWIXAV** - mémoire de M1 d'Alicia ;
+- **FLUXOLF** - mémoire de M1 de Morgane.
+
 ## Utilisation
 
 Ouvrir simplement `index.html` dans un navigateur moderne.
