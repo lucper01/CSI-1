@@ -2,54 +2,33 @@
 
 Présentation web du premier Comité de suivi individuel de Luc Perroquin.
 
-Le projet reprend la direction artistique du Portfolio académique tout en l'adaptant à un usage de présentation : grandes cartes, ombres souples, palette vert profond et crème, titres serif, mode sombre et options d'accessibilité.
+Le site est publié via GitHub Pages et reprend la direction artistique du Portfolio académique : grandes cartes, titres serif, palettes personnalisables, modes clair/sombre et options d'accessibilité.
 
-## Contenu
+## Version actuelle
 
-La présentation a été réorganisée pour éviter la répétition entre les diapositives et créer un fil narratif continu :
+La version actuelle clarifie le fil scientifique et corrige plusieurs points d'ergonomie :
 
-1. construction de la question scientifique ;
-2. programme expérimental et résultats déjà acquis ;
-3. infrastructure commune qui rend les études possibles ;
-4. développement doctoral, priorités et questions au comité.
-
-Les détails techniques sont déplacés dans des annexes afin de conserver un oral fluide sans perdre l'information.
-
-## Mémoires de M1 associés
-
-Certaines études ont également servi de support à des mémoires de Master 1, mentionnés directement sur les diapositives concernées :
-
-- **VIBEX** - mémoire de M1 d'Olivia ;
-- **TWIXAV** - mémoire de M1 d'Alicia ;
-- **FLUXOLF** - mémoire de M1 de Morgane.
-
-## Utilisation
-
-Ouvrir simplement `index.html` dans un navigateur moderne.
-
-Deux modes sont disponibles :
-
-- **Mode diapo** : une slide plein écran à la fois.
-- **Mode scroll** : lecture continue comme une page web.
-
-La présentation fonctionne sans dépendance externe et sans installation.
+- contrastes renforcés en mode sombre pour toutes les palettes ;
+- une seule famille chromatique active par palette, y compris pour cartes, callouts et statuts ;
+- titres limités visuellement à deux lignes maximum ;
+- slides TWIXAV, VIBEX et SOFT allégées avec zones réservées aux figures ;
+- séquence expérimentale explicitée : **TWIXAV -> SOFT -> TWIXOLF -> OASIS** ;
+- VIBEX identifié comme base d'un **short paper** ;
+- références courtes ajoutées sur les slides scientifiques clés ;
+- bibliographies Axe 1 et Axe 2 enrichies en fin de présentation.
 
 ## Navigation
 
-- `←` / `→` ou espace : slide précédente / suivante
-- `Home` / `End` : début / fin
-- `M` : basculer diapo / scroll
-- `O` : vue d'ensemble
-- `N` : notes orateur
-- `F` : plein écran
-- `C` : personnalisation
-- balayage horizontal sur écran tactile : navigation entre slides
+En mode diapo, seuls les raccourcis clavier suivants sont actifs :
 
-Un sommaire, une recherche de slide, une barre de progression et un chronomètre sont intégrés.
+- `←` : slide précédente ;
+- `→` : slide suivante.
+
+Les autres fonctions restent accessibles par les boutons de l'interface : sommaire, vue d'ensemble, notes, plein écran, personnalisation et changement de mode.
 
 ## Personnalisation
 
-Les préférences sont sauvegardées localement dans le navigateur :
+Les préférences sont conservées localement dans le navigateur :
 
 - thème clair, sombre ou système ;
 - palette Portfolio, bleu, cassis ou ocre ;
@@ -57,40 +36,23 @@ Les préférences sont sauvegardées localement dans le navigateur :
 - contraste élevé ;
 - police très lisible ;
 - réduction des animations ;
-- inclusion ou non des annexes dans le mode diapo.
+- inclusion ou non des annexes en mode diapo.
 
-## Structure technique
+## Structure
 
-Le site repose volontairement sur un seul fichier applicatif :
-
-- `index.html` : HTML, CSS, contenu de la présentation et JavaScript ;
+- `index.html` : point d'entrée GitHub Pages et couche de corrections de la présentation ;
+- `presentation-base.html` : version source conservée comme base et solution de secours ;
 - `README.md` : documentation ;
-- `.gitignore` : fichiers locaux à exclure.
+- `.gitignore` : fichiers locaux exclus du dépôt.
 
-Les slides sont définies dans le tableau JavaScript `slides` à la fin de `index.html`. Chaque entrée contient notamment :
-
-- `section`
-- `kicker`
-- `title`
-- `lead`
-- `content`
-- `notes`
-- `appendix` pour les annexes facultatives
-
-Cette structure permet d'ajouter, retirer ou réordonner une slide sans toucher au moteur de présentation.
+Cette organisation conserve la version précédente intacte tout en appliquant les corrections de thème, de navigation et de contenu au chargement.
 
 ## GitHub Pages
 
-Le dépôt peut être publié directement avec GitHub Pages en utilisant la branche `main` et la racine du dépôt comme source.
-
-Une fois Pages activé dans les paramètres du dépôt, l'URL attendue est :
+URL attendue :
 
 `https://lucper01.github.io/CSI-1/`
 
 ## Données scientifiques
 
-Le contenu distingue explicitement les résultats préliminaires, les études en cours et les perspectives. Les paramètres ou résultats non verrouillés ne sont pas présentés comme définitifs.
-
-## Licence
-
-Aucune licence n'est ajoutée automatiquement à ce dépôt. Ajouter une licence séparément si nécessaire.
+Le support distingue les résultats préliminaires, les études actives et les perspectives. Les paramètres ou résultats non verrouillés ne sont pas présentés comme définitifs.
