@@ -28,13 +28,47 @@
     const historical=['csi-v14.js','csi-v15.js','csi-v16.js','csi-v17.js'];
     const frame=document.getElementById('presentation'),boot=document.getElementById('boot'),err=document.getElementById('bootError');
     const get=async(url,cache='force-cache')=>{const r=await fetch(url,{cache});if(!r.ok)throw new Error(`${url.split('/').pop()}: HTTP ${r.status}`);return r.text()};
+
+    function forceFrenchAndCleanHeader(){
+      try{
+        localStorage.setItem('csi-lang','fr');
+        const d=frame.contentDocument;
+        if(!d)return;
+        d.documentElement.lang='fr';
+
+        d.querySelectorAll('.csi-lang,.language-toggle,.lang-toggle,#csiQOverlay,.csi-qbtn').forEach(el=>el.remove());
+
+        d.querySelectorAll('.appbar button, header button').forEach(btn=>{
+          const label=(btn.textContent||'').trim();
+          const title=(btn.getAttribute('title')||'').toLowerCase();
+          const aria=(btn.getAttribute('aria-label')||'').toLowerCase();
+          const isLanguage=/^(en|fr)$/i.test(label)||title.includes('langue')||title.includes('language')||aria.includes('langue')||aria.includes('language');
+          const isHelp=label==='?';
+          const isQA=label.toUpperCase()==='Q&A';
+          if(isLanguage||isHelp||isQA)btn.remove();
+        });
+      }catch(e){console.warn('Header cleanup',e)}
+    }
+
     async function start(){
       try{
+        localStorage.setItem('csi-lang','fr');
         const [base,...coreCode]=await Promise.all([get(CORE+'presentation-base.html'),...core.map(f=>get(CORE+f))]);
         const histCode=await Promise.all(historical.map(f=>get(HIST+f,'no-store')));
         const patch=await get('csi-v17-csi1.js?v=20260903-1','no-store');
         [...coreCode,...histCode,patch].forEach((code,i)=>{try{(0,eval)(code)}catch(e){throw new Error(`script ${i+1}: ${e.message}`)}});
-        frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),900),{once:true});
+        frame.addEventListener('load',()=>{
+          forceFrenchAndCleanHeader();
+          const d=frame.contentDocument;
+          if(d&&d.body){
+            const observer=new MutationObserver(()=>forceFrenchAndCleanHeader());
+            observer.observe(d.body,{childList:true,subtree:true});
+          }
+          setTimeout(forceFrenchAndCleanHeader,450);
+          setTimeout(forceFrenchAndCleanHeader,1000);
+          setTimeout(forceFrenchAndCleanHeader,1800);
+          setTimeout(()=>boot.classList.add('hidden'),900);
+        },{once:true});
         frame.srcdoc=base;
       }catch(e){console.error(e);err.style.display='block';err.textContent='Impossible de charger la présentation.\n'+e.message;document.querySelector('.bar').style.display='none'}
     }
