@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V16</div><h1>Chargement de la présentation</h1><p>Préparation du support bilingue, des notes, des chapitres et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V17</div><h1>Chargement de la présentation</h1><p>Préparation du support bilingue, des notes, des chapitres et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
@@ -29,8 +29,8 @@
     async function start(){
       try{
         const [base,...scripts]=await Promise.all([get(ROOT+'presentation-base.html'),...files.map(f=>get(ROOT+f))]);
-        const patches=await Promise.all([14,15,16].map(n=>get(patchUrl(n),'no-store')));
-        const all=[...scripts,...patches],labels=[...files,'csi-v14.js','csi-v15.js','csi-v16.js'];
+        const patches=await Promise.all([14,15,16,17].map(n=>get(patchUrl(n),'no-store')));
+        const all=[...scripts,...patches],labels=[...files,'csi-v14.js','csi-v15.js','csi-v16.js','csi-v17.js'];
         all.forEach((code,i)=>{try{(0,eval)(`${code}\n//# sourceURL=${labels[i]}`)}catch(e){throw new Error(`${labels[i]}: ${e.message}`)}});
         frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),720),{once:true});
         frame.srcdoc=base;
