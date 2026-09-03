@@ -50,6 +50,88 @@
       }catch(e){console.warn('Header cleanup',e)}
     }
 
+    function integrateProjectSheets(){
+      try{
+        const d=frame.contentDocument;
+        if(!d||!d.body)return false;
+        if(d.documentElement.dataset.projectSheets==='1')return true;
+
+        const style=d.createElement('style');
+        style.id='csi-project-sheet-style';
+        style.textContent=`
+          .csi-sheet-actions{position:absolute;top:88px;right:clamp(24px,4vw,66px);z-index:18;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;max-width:360px}
+          .csi-sheet-btn{border:1px solid var(--line);background:color-mix(in srgb,var(--white) 94%,transparent);color:var(--accent-strong);border-radius:999px;padding:8px 12px;font-size:.76rem;font-weight:950;cursor:pointer;box-shadow:var(--shadow-soft);backdrop-filter:blur(12px);display:inline-flex;align-items:center;gap:7px}
+          .csi-sheet-btn:hover{background:var(--accent-soft)}
+          .csi-sheet-btn:before{content:'▤';font-size:.95rem}
+          #csiSheetViewer{position:fixed;inset:0;z-index:200000;background:color-mix(in srgb,var(--cream) 96%,#000 4%);display:none;flex-direction:column;color:var(--text)}
+          #csiSheetViewer.open{display:flex}
+          .csi-sheet-head{height:66px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--cream) 95%,transparent);backdrop-filter:blur(16px)}
+          .csi-sheet-head strong{font-family:Georgia,'Times New Roman',serif;color:var(--accent-strong);font-size:1.12rem}
+          .csi-sheet-head-actions{display:flex;align-items:center;gap:8px}
+          .csi-sheet-head a,.csi-sheet-close{border:1px solid var(--line);background:var(--white);color:var(--text);border-radius:999px;padding:8px 12px;font-weight:900;text-decoration:none;cursor:pointer;font-size:.8rem}
+          .csi-sheet-frame{width:100%;height:calc(100vh - 66px);border:0;background:#525659}
+          @media(max-height:760px){.csi-sheet-actions{top:70px}.csi-sheet-btn{padding:6px 9px;font-size:.7rem}}
+          @media(max-width:850px){.csi-sheet-actions{top:72px;right:18px}.csi-sheet-head strong{font-size:.92rem}.csi-sheet-head a{display:none}}
+        `;
+        d.head.appendChild(style);
+
+        const viewer=d.createElement('div');
+        viewer.id='csiSheetViewer';
+        viewer.innerHTML=`<div class="csi-sheet-head"><strong id="csiSheetTitle">Fiche projet</strong><div class="csi-sheet-head-actions"><a id="csiSheetExternal" href="#" target="_blank" rel="noopener">Ouvrir le PDF</a><button class="csi-sheet-close" id="csiSheetClose" type="button">Retour au diapo</button></div></div><iframe class="csi-sheet-frame" id="csiSheetFrame" title="Fiche projet"></iframe>`;
+        d.body.appendChild(viewer);
+
+        const viewFrame=d.getElementById('csiSheetFrame');
+        const viewTitle=d.getElementById('csiSheetTitle');
+        const viewExternal=d.getElementById('csiSheetExternal');
+        const closeViewer=()=>{viewer.classList.remove('open');viewFrame.removeAttribute('src')};
+        d.getElementById('csiSheetClose').onclick=closeViewer;
+        viewer.addEventListener('click',e=>{if(e.target===viewer)closeViewer()});
+        d.addEventListener('keydown',e=>{if(e.key==='Escape'&&viewer.classList.contains('open')){e.preventDefault();closeViewer()}},true);
+
+        const root='https://lucper01.github.io/CSI-1/affiches/';
+        const configs=[
+          {study:'TWIXAV',title:/^TWIXAV\b/i,files:[['Fiche projet','TWIXAV.pdf']]},
+          {study:'TWIXOLF',title:/^TWIXOLF\b/i,files:[['Fiche projet','TWIXOLF.pdf']]},
+          {study:'SOFT',title:/^SOFT\b/i,files:[['Fiche projet','SOFT.pdf']]},
+          {study:'VIBEX',title:/^VIBEX\b/i,files:[['Fiche projet','VIBEX.pdf']]},
+          {study:'OASIS',title:/^OASIS\b/i,files:[['Fiche projet','OASIS.pdf']]},
+          {study:'FLUXOLF',title:/^FLUXOLF\b/i,files:[['Fiche 1','FLUXOLF_1.pdf'],['Fiche 2','FLUXOLF_2.pdf']]}
+        ];
+
+        const allSlides=[...d.querySelectorAll('#deck .slide,.slide')];
+        configs.forEach(cfg=>{
+          const slide=allSlides.find(el=>{
+            const h=el.querySelector('h1,h2');
+            return h&&cfg.title.test((h.textContent||'').trim());
+          });
+          if(!slide)return;
+          if(getComputedStyle(slide).position==='static')slide.style.position='relative';
+          const actions=d.createElement('div');
+          actions.className='csi-sheet-actions';
+          actions.setAttribute('aria-label',`Fiches ${cfg.study}`);
+          cfg.files.forEach(([label,file])=>{
+            const url=root+encodeURIComponent(file).replace(/%2F/g,'/');
+            const btn=d.createElement('button');
+            btn.type='button';
+            btn.className='csi-sheet-btn';
+            btn.textContent=label;
+            btn.title=`Ouvrir ${label.toLowerCase()} ${cfg.study}`;
+            btn.onclick=()=>{
+              viewTitle.textContent=`${cfg.study} - ${label}`;
+              viewExternal.href=url;
+              viewFrame.src=url+'#view=FitH';
+              viewer.classList.add('open');
+            };
+            actions.appendChild(btn);
+          });
+          slide.appendChild(actions);
+        });
+
+        d.documentElement.dataset.projectSheets='1';
+        return true;
+      }catch(e){console.warn('Project sheets',e);return false}
+    }
+
     async function start(){
       try{
         localStorage.setItem('csi-lang','fr');
@@ -67,6 +149,9 @@
           setTimeout(forceFrenchAndCleanHeader,450);
           setTimeout(forceFrenchAndCleanHeader,1000);
           setTimeout(forceFrenchAndCleanHeader,1800);
+          setTimeout(integrateProjectSheets,900);
+          setTimeout(integrateProjectSheets,1600);
+          setTimeout(integrateProjectSheets,2600);
           setTimeout(()=>boot.classList.add('hidden'),900);
         },{once:true});
         frame.srcdoc=base;
