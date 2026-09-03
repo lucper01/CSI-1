@@ -16,67 +16,33 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version actuelle</div><h1>Chargement de la présentation</h1><p>Préparation du support, des notes et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V14</div><h1>Chargement de la présentation</h1><p>Préparation du support, des notes, des illustrations et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
     const SOURCE='e3ec47385a42f318469eb06f72cf659f07fcdeae';
     const ROOT=`https://raw.githubusercontent.com/lucper01/CSI-1/${SOURCE}/`;
+    const PATCH='https://raw.githubusercontent.com/lucper01/CSI-1/main/csi-v14.js';
     const files=['csi-v11-core.js','csi-v11-doctoral.js','csi-v11-ui.js','csi-v11-enfix.js','csi-v11-polish.js','csi-v11-clean.js','csi-v12.js','csi-v13.js'];
     const frame=document.getElementById('presentation'),boot=document.getElementById('boot'),err=document.getElementById('bootError');
-    const get=async path=>{const r=await fetch(ROOT+path,{cache:'force-cache'});if(!r.ok)throw new Error(`${path}: HTTP ${r.status}`);return r.text()};
-
-    const portfolioPhotos={
-      'Luc PERROQUIN':{src:'https://raw.githubusercontent.com/lucper01/Portfolio/main/assets/photo-profil.png',fit:'contain',position:'center'},
-      'Renaud BROCHARD':{src:'https://raw.githubusercontent.com/lucper01/Portfolio/main/assets/renaud.jpg',fit:'contain',position:'center'},
-      'Arnaud LELEU':{src:'https://raw.githubusercontent.com/lucper01/Portfolio/main/assets/arnaud.jpg',fit:'contain',position:'center'}
-    };
-    function ensurePortraitStyles(){
-      try{
-        const d=frame.contentDocument;if(!d||d.getElementById('csiPortraitFix'))return;
-        const s=d.createElement('style');s.id='csiPortraitFix';s.textContent=`
-          .csi-people-grid{align-items:stretch!important}
-          .csi-person{min-height:315px!important}
-          .csi-photo{height:154px!important;padding:0!important;overflow:hidden!important;border-style:solid!important;background:color-mix(in srgb,var(--white) 92%,var(--accent-pale))!important}
-          .csi-person.primary .csi-photo{background:rgba(255,255,255,.94)!important}
-          .csi-photo img{width:100%!important;height:100%!important;display:block!important;border-radius:15px!important}
-          @media(max-width:1250px){.csi-person{min-height:300px!important}.csi-photo{height:170px!important}}
-        `;d.head.appendChild(s);
-      }catch(e){}
-    }
-    function applyPortfolioPhotos(){
-      try{
-        const d=frame.contentDocument;if(!d)return;ensurePortraitStyles();
-        Object.entries(portfolioPhotos).forEach(([name,cfg])=>{
-          d.querySelectorAll('.csi-person h3').forEach(h=>{
-            if(h.textContent.trim().toLowerCase()!==name.toLowerCase())return;
-            const card=h.closest('.csi-person'),slot=card&&card.querySelector('.csi-photo');
-            if(!slot)return;
-            const current=slot.querySelector('img');
-            if(current&&current.dataset.portfolioPerson===name)return;
-            slot.innerHTML=`<img data-portfolio-person="${name}" src="${cfg.src}" alt="${name}" style="object-fit:${cfg.fit};object-position:${cfg.position};">`;
-            slot.dataset.photoApplied='1';
-          });
-        });
-      }catch(e){console.warn('Portfolio photos',e)}
-    }
-    function keepPortfolioPhotosSynced(){
-      applyPortfolioPhotos();
-      try{
-        const d=frame.contentDocument;if(!d||!d.body)return;
-        const obs=new MutationObserver(()=>applyPortfolioPhotos());
-        obs.observe(d.body,{childList:true,subtree:true});
-        [100,250,500,900,1500,2500].forEach(ms=>setTimeout(applyPortfolioPhotos,ms));
-      }catch(e){}
-    }
+    const get=async(url,cache='force-cache')=>{const r=await fetch(url,{cache});if(!r.ok)throw new Error(`${url.split('/').pop()}: HTTP ${r.status}`);return r.text()};
 
     async function start(){
       try{
-        const [base,...scripts]=await Promise.all([get('presentation-base.html'),...files.map(get)]);
-        scripts.forEach((code,i)=>{try{(0,eval)(`${code}\n//# sourceURL=${files[i]}`)}catch(e){throw new Error(`${files[i]}: ${e.message}`)}});
-        frame.addEventListener('load',()=>{keepPortfolioPhotosSynced();setTimeout(()=>boot.classList.add('hidden'),260)},{once:true});
+        const [base,...scripts]=await Promise.all([get(ROOT+'presentation-base.html'),...files.map(f=>get(ROOT+f))]);
+        const patch=await get(PATCH+'?v=14','no-store');
+        [...scripts,patch].forEach((code,i)=>{
+          const label=i<files.length?files[i]:'csi-v14.js';
+          try{(0,eval)(`${code}\n//# sourceURL=${label}`)}catch(e){throw new Error(`${label}: ${e.message}`)}
+        });
+        frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),520),{once:true});
         frame.srcdoc=base;
-      }catch(e){console.error(e);err.style.display='block';err.textContent='Impossible de charger la présentation.\n'+e.message;document.querySelector('.bar').style.display='none'}
+      }catch(e){
+        console.error(e);
+        err.style.display='block';
+        err.textContent='Impossible de charger la présentation.\n'+e.message;
+        document.querySelector('.bar').style.display='none';
+      }
     }
     start();
   })();
