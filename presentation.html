@@ -16,23 +16,23 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V17</div><h1>Chargement de la présentation</h1><p>Préparation du support bilingue, des notes, des chapitres et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V18.2</div><h1>Chargement de la présentation</h1><p>Préparation de la refonte V18 : lisibilité, résultats, bilan doctoral, rétroplanning et notes détaillées.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
     const SOURCE='e3ec47385a42f318469eb06f72cf659f07fcdeae';
     const ROOT=`https://raw.githubusercontent.com/lucper01/CSI-1/${SOURCE}/`;
-    const patchUrl=n=>`https://raw.githubusercontent.com/lucper01/CSI-1/main/csi-v${n}.js?v=${n}`;
+    const patchUrl=n=>`https://raw.githubusercontent.com/lucper01/CSI-1/main/csi-v${n}.js?v=18.2-${n}`;
     const files=['csi-v11-core.js','csi-v11-doctoral.js','csi-v11-ui.js','csi-v11-enfix.js','csi-v11-polish.js','csi-v11-clean.js','csi-v12.js','csi-v13.js'];
     const frame=document.getElementById('presentation'),boot=document.getElementById('boot'),err=document.getElementById('bootError');
     const get=async(url,cache='force-cache')=>{const r=await fetch(url,{cache});if(!r.ok)throw new Error(`${url.split('/').pop()}: HTTP ${r.status}`);return r.text()};
     async function start(){
       try{
         const [base,...scripts]=await Promise.all([get(ROOT+'presentation-base.html'),...files.map(f=>get(ROOT+f))]);
-        const patches=await Promise.all([14,15,16,17].map(n=>get(patchUrl(n),'no-store')));
-        const all=[...scripts,...patches],labels=[...files,'csi-v14.js','csi-v15.js','csi-v16.js','csi-v17.js'];
+        const patches=await Promise.all([14,15,16,17,18].map(n=>get(patchUrl(n),'no-store')));
+        const all=[...scripts,...patches],labels=[...files,'csi-v14.js','csi-v15.js','csi-v16.js','csi-v17.js','csi-v18.js'];
         all.forEach((code,i)=>{try{(0,eval)(`${code}\n//# sourceURL=${labels[i]}`)}catch(e){throw new Error(`${labels[i]}: ${e.message}`)}});
-        frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),720),{once:true});
+        frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),1000),{once:true});
         frame.srcdoc=base;
       }catch(e){console.error(e);err.style.display='block';err.textContent='Impossible de charger la présentation.\n'+e.message;document.querySelector('.bar').style.display='none'}
     }
