@@ -16,13 +16,14 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V14</div><h1>Chargement de la présentation</h1><p>Préparation du support, des notes, des illustrations et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - V15</div><h1>Chargement de la présentation</h1><p>Préparation du support, des notes, des illustrations et des interactions.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
     const SOURCE='e3ec47385a42f318469eb06f72cf659f07fcdeae';
     const ROOT=`https://raw.githubusercontent.com/lucper01/CSI-1/${SOURCE}/`;
-    const PATCH='https://raw.githubusercontent.com/lucper01/CSI-1/main/csi-v14.js';
+    const PATCH14='https://raw.githubusercontent.com/lucper01/CSI-1/main/csi-v14.js';
+    const PATCH15='https://raw.githubusercontent.com/lucper01/CSI-1/main/csi-v15.js';
     const files=['csi-v11-core.js','csi-v11-doctoral.js','csi-v11-ui.js','csi-v11-enfix.js','csi-v11-polish.js','csi-v11-clean.js','csi-v12.js','csi-v13.js'];
     const frame=document.getElementById('presentation'),boot=document.getElementById('boot'),err=document.getElementById('bootError');
     const get=async(url,cache='force-cache')=>{const r=await fetch(url,{cache});if(!r.ok)throw new Error(`${url.split('/').pop()}: HTTP ${r.status}`);return r.text()};
@@ -30,12 +31,13 @@
     async function start(){
       try{
         const [base,...scripts]=await Promise.all([get(ROOT+'presentation-base.html'),...files.map(f=>get(ROOT+f))]);
-        const patch=await get(PATCH+'?v=14','no-store');
-        [...scripts,patch].forEach((code,i)=>{
-          const label=i<files.length?files[i]:'csi-v14.js';
+        const [patch14,patch15]=await Promise.all([get(PATCH14+'?v=14','no-store'),get(PATCH15+'?v=15','no-store')]);
+        [...scripts,patch14,patch15].forEach((code,i)=>{
+          const labels=[...files,'csi-v14.js','csi-v15.js'];
+          const label=labels[i];
           try{(0,eval)(`${code}\n//# sourceURL=${label}`)}catch(e){throw new Error(`${label}: ${e.message}`)}
         });
-        frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),520),{once:true});
+        frame.addEventListener('load',()=>setTimeout(()=>boot.classList.add('hidden'),560),{once:true});
         frame.srcdoc=base;
       }catch(e){
         console.error(e);
