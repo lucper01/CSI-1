@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version scientifique intégrée</div><h1>Chargement de la présentation</h1><p>Chargement de la présentation autonome avec identité visuelle par étude.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version autonome</div><h1>Chargement de la présentation</h1><p>Chargement de la présentation autonome avec identité visuelle par étude.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
@@ -46,7 +46,7 @@
       try{
         const d=frame.contentDocument;
         if(!d||!d.body)return false;
-        if(d.documentElement.dataset.projectSheets==='1'&&d.querySelector('.csi-sheet-actions'))return true;if(d.documentElement.dataset.projectSheets==='1'){d.documentElement.dataset.projectSheets='';d.getElementById('csiSheetViewer')?.remove();d.getElementById('csi-project-sheet-style')?.remove();}
+        if(d.documentElement.dataset.projectSheets==='1')return true;
 
         const style=d.createElement('style');
         style.id='csi-project-sheet-style';
@@ -162,7 +162,7 @@
           setTimeout(integrateProjectSheets,900);
           setTimeout(integrateProjectSheets,1600);
           setTimeout(integrateProjectSheets,2600);
-          setTimeout(()=>boot.classList.add('hidden'),2500);
+          setTimeout(()=>boot.classList.add('hidden'),900);
         },{once:true});
         frame.srcdoc=base;
       }catch(e){
@@ -176,210 +176,5 @@
     start();
   })();
   </script>
-<script id="CSI_SCIENCE_INTEGRATION_20260905">
-(()=>{
-  const frame=document.getElementById('presentation');
-  if(!frame)return;
-
-  const schedule=()=>[1900,2150,2350].forEach(ms=>setTimeout(()=>{
-    try{const w=frame.contentWindow;if(w)w.__CSI_SCIENCE_20260905__=false;}catch(e){}
-    applyScience();
-  },ms));
-  frame.addEventListener('load',schedule);
-  if(frame.contentDocument && frame.contentDocument.readyState==='complete') schedule();
-
-  function applyScience(){
-    try{
-      const w=frame.contentWindow,d=w.document,C=w.CSI11;
-      if(!C || !Array.isArray(C.slides) || w.__CSI_SCIENCE_20260905__) return;
-      w.__CSI_SCIENCE_20260905__=true;
-      const slides=C.slides;
-      const text=s=>`${s?.section||''} ${s?.kicker||''} ${s?.title||''} ${s?.lead||''} ${s?.content||''}`;
-      const find=(...rx)=>slides.find(s=>rx.some(r=>r.test(text(s))));
-      const set=(s,key,val)=>{if(!s)return;s[key]=val;if(s._fr)s._fr[key]=val};
-      const make=(section,kicker,title,lead,content,notes='')=>{
-        const m=String(title||'').match(/^(TWIXAV|VIBEX|SOFT|OASIS|TWIXOLF)\b/i);
-        const study=m?m[1].toUpperCase():undefined;
-        const s={section,kicker,title,lead,content,notes,...(study?{study}:{})};
-        s._fr={section,kicker,title,lead,content,notes};
-        return s;
-      };
-      const insertBefore=(anchor,item)=>{if(!anchor||!item)return;const i=slides.indexOf(anchor);slides.splice(i<0?slides.length:i,0,item)};
-      const insertAfter=(anchor,item)=>{if(!anchor||!item)return;const i=slides.indexOf(anchor);slides.splice(i<0?slides.length:i+1,0,item)};
-      const moveSequenceAfter=(anchor,items)=>{
-        if(!anchor)return;
-        const uniq=[...new Set(items.filter(Boolean))];
-        uniq.forEach(s=>{const i=slides.indexOf(s);if(i>=0)slides.splice(i,1)});
-        const a=slides.indexOf(anchor);
-        slides.splice(a+1,0,...uniq);
-      };
-      const hasTitle=t=>slides.some(s=>(s.title||'').trim()===t);
-      const card=(h,b,cls='')=>`<div class="csi-sci-card ${cls}"><h3>${h}</h3>${b}</div>`;
-
-      if(!d.getElementById('csiScienceStyle')){
-        const st=d.createElement('style');st.id='csiScienceStyle';st.textContent=`
-          .csi-sci-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin-top:14px}.csi-sci-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.csi-sci-card{border:1px solid var(--line);border-radius:22px;background:var(--white);padding:18px;box-shadow:0 10px 28px color-mix(in srgb,var(--accent-strong) 8%,transparent)}.csi-sci-card h3{margin:0 0 8px;color:var(--accent-strong);font:800 1.08rem Georgia,serif}.csi-sci-card p{margin:0;color:var(--muted);font-size:.82rem;line-height:1.44}.csi-sci-card ul{margin:8px 0 0;padding-left:18px}.csi-sci-card li{margin:6px 0;color:var(--muted);font-size:.8rem;line-height:1.4}.csi-sci-card.dark{background:linear-gradient(145deg,var(--accent-strong),color-mix(in srgb,var(--accent-strong) 75%,#000));color:#fff;border-color:transparent}.csi-sci-card.dark h3,.csi-sci-card.dark p,.csi-sci-card.dark li{color:#fff}.csi-sci-tag{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong);font-size:.66rem;font-weight:950;text-transform:uppercase;letter-spacing:.045em;margin-bottom:9px}.csi-sci-chain{display:grid;grid-template-columns:1fr 50px 1fr 50px 1fr;gap:10px;align-items:stretch;margin-top:16px}.csi-sci-arrow{display:grid;place-items:center;color:var(--accent);font-weight:950;font-size:1.5rem}.csi-sci-quote{margin-top:14px;padding:14px 16px;border-radius:18px;background:var(--accent-pale);border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));color:var(--accent-strong);font-weight:780;line-height:1.42}.csi-sci-ref{margin-top:12px;padding-top:9px;border-top:1px solid var(--line);font-size:.68rem;color:var(--muted);line-height:1.35}.csi-sci-core{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}.csi-sci-core .csi-sci-card{padding:15px}.csi-sci-extensions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}.csi-sci-pill{padding:6px 10px;border-radius:999px;background:var(--white);border:1px solid var(--line);font-size:.7rem;font-weight:850;color:var(--muted)}
-          @media(max-width:1100px){.csi-sci-grid,.csi-sci-grid.two,.csi-sci-core{grid-template-columns:1fr}.csi-sci-chain{grid-template-columns:1fr}.csi-sci-arrow{transform:rotate(90deg)}}
-        `;d.head.appendChild(st);
-      }
-
-      // 1. General thesis introduction - reuse the validated existing slides.
-      const thesis=find(/Un environnement qui combine cognition/i,/Y a-t-il un espace-temps pour les odeurs/i);
-      if(thesis){
-        set(thesis,'section','Introduction générale');
-        set(thesis,'kicker','Présentation de la thèse');
-        set(thesis,'lead','La thèse STOLF interroge la manière dont l’olfaction s’inscrit dans l’organisation spatio-temporelle multisensorielle, en articulation avec la vision et l’audition.');
-      }
-      const axes=find(/Deux axes pour interroger/i,/Axe 1.*Axe 2/i);
-      if(axes){
-        set(axes,'section','Introduction générale');
-        set(axes,'kicker','Sujet et axes scientifiques');
-      }
-
-      let sela=find(/No space, no time/i,/Sela.*Sobel/i);
-      if(!sela){
-        sela=make('Introduction générale','Verrou théorique','« No space, no time? » - le paradoxe de l’attention olfactive','Sela et Sobel (2010) décrivent une modalité dont les contraintes spatiales et temporelles diffèrent fortement de celles de la vision et de l’audition. La thèse prend cette asymétrie comme une question expérimentale, pas comme une conclusion acquise.',`<div class="csi-sci-grid"><div class="csi-sci-card"><span class="csi-sci-tag">Espace</span><h3>Une spatialisation limitée</h3><p>Les capacités humaines de localisation olfactive sont réduites, ce qui limite la sélection spatiale et la capture attentionnelle par rapport à la vision et à l’audition.</p></div><div class="csi-sci-card"><span class="csi-sci-tag">Temps</span><h3>Un échantillonnage par le sniff</h3><p>L’information olfactive est acquise de façon discontinue, au rythme des épisodes inspiratoires, avec une temporalité propre à la délivrance et à la respiration.</p></div><div class="csi-sci-card dark"><span class="csi-sci-tag">STOLF</span><h3>Le verrou à tester</h3><p>Ces contraintes réduisent-elles réellement la structuration spatio-temporelle olfactive, ou modifient-elles seulement la manière dont elle devient disponible à la perception et à l’attention ?</p></div></div><div class="csi-sci-quote">La question n’est donc pas « l’olfaction n’a ni espace ni temps », mais : comment son espace et son temps peuvent-ils être mesurés lorsqu’ils ne suivent pas les mêmes contraintes que les autres modalités ?</div><div class="csi-sci-ref">Sela, L. & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div>`,'Présenter Sela & Sobel comme un verrou théorique. Ne jamais transformer leur argument en preuve d’une absence de représentations spatiales ou temporelles.');
-        if(axes)insertAfter(axes,sela); else if(thesis)insertAfter(thesis,sela); else slides.unshift(sela);
-      }
-
-      // 2. Program hierarchy: five central studies, conditional extensions.
-      const architecture=find(/Dix études principales/i,/Cinq études centrales/i,/logique commune/i,/architecture.*programme/i);
-      if(architecture){
-        set(architecture,'title','Cinq études centrales, des extensions clairement conditionnelles');
-        set(architecture,'lead','Le programme est hiérarchisé autour de cinq études directement nécessaires à la thèse. Les autres projets sont des prolongements activés selon les résultats, la faisabilité et le calendrier.');
-        set(architecture,'content',`<div class="csi-sci-core">${card('TWIXAV','<span class="csi-sci-tag">Référence temporelle</span><p>Fenêtre temporelle audiovisuelle et asymétrie qui motive SOFT.</p>')}${card('VIBEX','<span class="csi-sci-tag">Référence spatiale</span><p>Boundary Extension visuelle servant de base à OASIS.</p>')}${card('SOFT','<span class="csi-sci-tag">Étude centrale</span><p>Onset, offset et durée perçus en audition, vision et olfaction.</p>')}${card('OASIS','<span class="csi-sci-tag">Étude centrale</span><p>Influence olfactive sur la mémoire spatiale des scènes.</p>')}${card('TWIXOLF','<span class="csi-sci-tag">Étude centrale</span><p>Transposition de la liaison temporelle à l’olfaction.</p>')}</div><div class="csi-sci-extensions"><strong>Extensions conditionnelles</strong><span class="csi-sci-pill">SORBET</span><span class="csi-sci-pill">SOLAR</span><span class="csi-sci-pill">COBEX</span><span class="csi-sci-pill">BRAUD</span><span class="csi-sci-pill">BRAUDOLF</span><span class="csi-sci-pill">FLUXOLF - projet annexe</span></div>`);
-      }
-
-      // 3. TWIXAV - reuse existing method/results, add intro/discussion.
-      const twMethod=find(/^.*TWIXAV - établir une référence audiovisuelle/i,/TWIXAV.*jugement de simultanéité/i);
-      const twResults=find(/Un effet net de la durée et du décalage temporel/i,/Un effet net de la durée/i,/TWIXAV.*p = \.001/i);
-      let twIntro=find(/TWIXAV - pourquoi commencer/i);
-      if(!twIntro){
-        twIntro=make('Études de l’année 1','TWIXAV - Introduction','TWIXAV - pourquoi commencer par une fenêtre temporelle audiovisuelle ?','Avant d’introduire l’olfaction, TWIXAV établit une référence temporelle dans deux modalités dont les propriétés d’intégration sont mieux caractérisées.',`<div class="csi-sci-grid"><div class="csi-sci-card"><span class="csi-sci-tag">Concept</span><h3>Temporal Binding Window</h3><p>La probabilité de juger deux événements comme simultanés varie avec leur décalage temporel et permet d’estimer une fenêtre d’intégration.</p></div><div class="csi-sci-card"><span class="csi-sci-tag">Question</span><h3>La durée modifie-t-elle cette fenêtre ?</h3><p>TWIXAV teste si la durée des stimuli affecte la tolérance au décalage audiovisuel, plutôt que de supposer une fenêtre temporelle unique et fixe.</p></div><div class="csi-sci-card dark"><span class="csi-sci-tag">Enjeu</span><h3>Comprendre l’asymétrie</h3><p>Une différence entre les deux directions temporelles constitue un indice mécanistique et motive une mesure plus directe du début et de la fin perceptifs avec SOFT.</p></div></div>`,'Introduire la TBW sans surcharger de détails statistiques. L’objectif est de rendre lisible la logique qui conduit de TWIXAV à SOFT.');
-        if(twMethod)insertBefore(twMethod,twIntro);
-      }
-      if(twMethod){set(twMethod,'section','Études de l’année 1');set(twMethod,'kicker','TWIXAV - Méthode');}
-      if(twResults){set(twResults,'section','Études de l’année 1');set(twResults,'kicker','TWIXAV - Résultats');}
-      let twDiscussion=find(/TWIXAV - ce que les résultats changent/i);
-      if(!twDiscussion){
-        twDiscussion=make('Études de l’année 1','TWIXAV - Discussion','TWIXAV - ce que les résultats changent pour la suite','Les effets observés montrent que la synchronie audiovisuelle ne se résume pas à un seuil temporel unique. La durée et la direction du décalage doivent être prises en compte avant toute transposition à l’olfaction.',`<div class="csi-sci-grid"><div class="csi-sci-card"><h3>Durée × SOA</h3><p>L’effet conjoint de la durée et du décalage indique que la fenêtre temporelle dépend des propriétés du stimulus et pas seulement d’un intervalle abstrait.</p></div><div class="csi-sci-card"><h3>PSS, fenêtre, asymétrie</h3><p>Ces indicateurs sont consolidés dans les analyses finales. L’interprétation reste prudente tant que leurs estimations et leur robustesse ne sont pas verrouillées.</p></div><div class="csi-sci-card dark"><h3>Décision scientifique</h3><p>SOFT est priorisé pour tester directement onset et offset perceptifs, puis TWIXOLF transposera la question à l’olfaction.</p></div></div>`);
-        insertAfter(twResults||twMethod,twDiscussion);
-      }
-
-      // 4. VIBEX - intro/method/results/discussion.
-      const vibMethod=find(/^.*VIBEX - établir une référence visuelle de Boundary Extension/i,/VIBEX.*24 scènes/i);
-      let vibIntro=find(/VIBEX - pourquoi établir une référence visuelle/i);
-      if(!vibIntro){
-        vibIntro=make('Études de l’année 1','VIBEX - Introduction','VIBEX - pourquoi établir une référence visuelle ?','VIBEX établit une référence comportementale de Boundary Extension avant d’introduire une modulation olfactive avec OASIS.',`<div class="csi-sci-grid"><div class="csi-sci-card"><span class="csi-sci-tag">Phénomène</span><h3>Boundary Extension</h3><p>La mémoire d’une scène peut inclure des informations spatiales au-delà de ses limites réellement présentées, révélant une représentation constructive de l’espace.</p></div><div class="csi-sci-card"><span class="csi-sci-tag">Référence</span><h3>Une base visuelle contrôlée</h3><p>Le paradigme doit être fonctionnel et stable sans odeur avant de pouvoir attribuer une modification ultérieure au contexte olfactif.</p></div><div class="csi-sci-card dark"><span class="csi-sci-tag">Suite</span><h3>Préparer OASIS</h3><p>VIBEX fixe les scènes, la logique de comparaison et les indices comportementaux qui serviront de référence à l’étude olfactive.</p></div></div>`);
-        if(vibMethod)insertBefore(vibMethod,vibIntro);
-      }
-      if(vibMethod){set(vibMethod,'section','Études de l’année 1');set(vibMethod,'kicker','VIBEX - Méthode');}
-      let vibResults=find(/VIBEX - résultats du prétest et statut/i);
-      if(!vibResults){
-        vibResults=make('Études de l’année 1','VIBEX - Résultats','VIBEX - résultats du prétest et statut','Le prétest montre que le paradigme est opérationnel et fournit des données exploitables. Les analyses finales doivent encore verrouiller la stabilité des effets avant l’introduction de l’olfaction.',`<div class="csi-sci-grid"><div class="csi-sci-card"><h3>24 scènes</h3><p>Le matériel visuel et la procédure permettent une collecte structurée sur les différentes configurations spatiales.</p></div><div class="csi-sci-card"><h3>4 conditions</h3><p>LL, SS, LS et SL permettent de séparer les configurations identiques et différentes nécessaires au calcul des indices de Boundary Extension.</p></div><div class="csi-sci-card dark"><h3>Statut</h3><p>Paradigme fonctionnel et prétest exploitable. Aucune statistique inférentielle supplémentaire n’est affirmée ici tant que les analyses finales ne sont pas consolidées.</p></div></div>`);
-        insertAfter(vibMethod,vibResults);
-      }
-      let vibDiscussion=find(/VIBEX - ce que le prétest permet maintenant/i);
-      if(!vibDiscussion){
-        vibDiscussion=make('Études de l’année 1','VIBEX - Discussion','VIBEX - ce que le prétest permet maintenant','Le prétest valide la faisabilité de la tâche et permet de préparer OASIS sur une base visuelle déjà caractérisée.',`<div class="csi-sci-grid"><div class="csi-sci-card"><h3>Faisabilité</h3><p>La tâche, les scènes et la logique de réponse sont utilisables dans une collecte structurée.</p></div><div class="csi-sci-card"><h3>À verrouiller</h3><p>Normage des scènes, stabilité des profils par taille et indice global de Boundary Extension doivent être finalisés.</p></div><div class="csi-sci-card dark"><h3>Conséquence</h3><p>OASIS pourra conserver la référence VIBEX et tester spécifiquement l’effet d’un contexte olfactif sur la mémoire spatiale des scènes.</p></div></div>`);
-        insertAfter(vibResults||vibMethod,vibDiscussion);
-      }
-
-      // 5. Year-1 synthesis.
-      let year1=find(/Deux acquis expérimentaux structurent la suite/i);
-      if(!year1){
-        year1=make('Bilan scientifique','Synthèse - année 1','Deux acquis expérimentaux structurent la suite','TWIXAV et VIBEX ne clôturent pas les deux axes, mais fournissent déjà les références expérimentales qui déterminent l’ordre des études suivantes.',`<div class="csi-sci-grid two"><div class="csi-sci-card dark"><span class="csi-sci-tag">Temps</span><h3>TWIXAV</h3><p>Des données temporelles exploitables, un effet de la durée et du SOA, et une asymétrie qui conduit directement à SOFT avant TWIXOLF.</p></div><div class="csi-sci-card"><span class="csi-sci-tag">Espace</span><h3>VIBEX</h3><p>Un paradigme spatial fonctionnel et un prétest exploitable, qui permettent de préparer l’extension olfactive avec OASIS.</p></div></div><div class="csi-sci-quote">Année 1 : les deux références non olfactives sont suffisamment avancées pour que l’année 2 se concentre sur les mécanismes et les extensions olfactives.</div>`);
-        insertAfter(vibDiscussion||vibResults||vibMethod,year1);
-      }
-
-      // 6. Transition to year 2.
-      let transition=find(/De la fenêtre audiovisuelle à la temporalité olfactive/i,/Deux références, trois études centrales/i);
-      if(!transition){
-        transition=make('Transition','Programme année 2','Deux références, trois études centrales pour l’année 2','Les résultats de l’année 1 organisent deux chaînes expérimentales complémentaires : une chaîne temporelle et une chaîne spatiale.',`<div class="csi-sci-grid two"><div class="csi-sci-card"><span class="csi-sci-tag">Branche temporelle</span><div class="csi-sci-chain"><div><h3>TWIXAV</h3><p>Référence audiovisuelle</p></div><div class="csi-sci-arrow">→</div><div><h3>SOFT</h3><p>Onset / offset / durée</p></div><div class="csi-sci-arrow">→</div><div><h3>TWIXOLF</h3><p>Fenêtre temporelle olfactive</p></div></div></div><div class="csi-sci-card dark"><span class="csi-sci-tag">Branche spatiale</span><div class="csi-sci-chain" style="grid-template-columns:1fr 50px 1fr"><div><h3>VIBEX</h3><p>Référence visuelle de Boundary Extension</p></div><div class="csi-sci-arrow">→</div><div><h3>OASIS</h3><p>Influence olfactive sur la mémoire spatiale</p></div></div></div></div>`);
-        insertAfter(year1,transition);
-      } else {
-        set(transition,'section','Transition');set(transition,'kicker','Programme année 2');set(transition,'title','Deux références, trois études centrales pour l’année 2');
-        set(transition,'lead','Les résultats de l’année 1 organisent deux chaînes expérimentales complémentaires : TWIXAV → SOFT → TWIXOLF pour le temps, et VIBEX → OASIS pour l’espace.');
-      }
-
-      // 7. SOFT.
-      let softIntro=find(/^.*SOFT - dissocier onset, offset et durée/i,/Mesurer le temps propre de chaque modalité/i,/^SOFT\b.*onset/i);
-      if(softIntro){
-        set(softIntro,'section','Études de l’année 2');set(softIntro,'kicker','SOFT - Introduction');set(softIntro,'title','SOFT - mesurer le temps propre de chaque modalité');
-        set(softIntro,'lead','SOFT teste directement la perception du début, de la fin et de la durée afin de comprendre si l’asymétrie observée dans TWIXAV peut provenir de différences propres aux modalités.');
-      }
-      let softMethod=find(/^SOFT - Méthode$/i);
-      if(!softMethod){
-        softMethod=make('Études de l’année 2','SOFT - Méthode','SOFT - Méthode','Le protocole compare audition, vision et olfaction dans une même architecture de réponse et de synchronisation, sans figer dans le CSI des paramètres techniques encore susceptibles d’évoluer.',`<div class="csi-sci-grid"><div class="csi-sci-card"><h3>Trois modalités</h3><ul><li>Audition</li><li>Vision</li><li>Olfaction</li></ul></div><div class="csi-sci-card"><h3>Trois estimations</h3><ul><li>Onset perçu</li><li>Offset perçu</li><li>Durée dérivée</li></ul></div><div class="csi-sci-card dark"><h3>Chaîne temporelle</h3><ul><li>Logs press / release</li><li>Sniff-0 et respiration pour l’olfaction</li><li>Triggers d’événements</li><li>Distinction commandé / délivré / perçu</li></ul></div></div><div class="csi-sci-quote">L’objectif n’est pas seulement de dater une commande logicielle, mais de caractériser le temps réellement disponible pour la perception.</div>`);
-        insertAfter(softIntro,softMethod);
-      }
-
-      // 8. OASIS - rewrite the obsolete approach/avoidance framing.
-      let oasisIntro=find(/^OASIS\b/i,/OASIS - relier odeur/i);
-      if(oasisIntro && !/^OASIS - Méthode$/i.test(oasisIntro.title||'')){
-        set(oasisIntro,'section','Études de l’année 2');set(oasisIntro,'kicker','OASIS - Introduction');set(oasisIntro,'title','OASIS - tester l’influence olfactive sur la mémoire spatiale des scènes');
-        set(oasisIntro,'lead','OASIS prolonge directement VIBEX : la référence visuelle de Boundary Extension est conservée et un contexte olfactif est introduit pour tester son influence sur la représentation spatiale mémorisée.');
-        set(oasisIntro,'content',`<div class="csi-sci-grid"><div class="csi-sci-card"><span class="csi-sci-tag">Point de départ</span><h3>VIBEX comme référence</h3><p>Les scènes, la logique identique/différent et les indices de Boundary Extension fournissent une base visuelle déjà caractérisée.</p></div><div class="csi-sci-card"><span class="csi-sci-tag">Question</span><h3>Que change l’odeur ?</h3><p>Tester si un contexte olfactif modifie le même jugement spatial, l’accuracy, le temps de réponse ou l’indice global de Boundary Extension.</p></div><div class="csi-sci-card dark"><span class="csi-sci-tag">Axe 2</span><h3>Influence sur la mémoire spatiale</h3><p>L’enjeu est la représentation spatiale des scènes. OASIS n’est pas présenté comme une étude d’approche-évitement.</p></div></div>`);
-      }
-      let oasisMethod=find(/^OASIS - Méthode$/i);
-      if(!oasisMethod){
-        oasisMethod=make('Études de l’année 2','OASIS - Méthode','OASIS - Méthode','La méthode conserve la structure comportementale de VIBEX et ajoute une stimulation olfactive contrôlée, avec les contrôles nécessaires à l’interprétation d’un effet multisensoriel.',`<div class="csi-sci-grid"><div class="csi-sci-card"><h3>Référence visuelle</h3><p>Scènes et logique expérimentale issues de VIBEX, avec conditions spatiales comparables.</p></div><div class="csi-sci-card"><h3>Contexte olfactif</h3><p>Délivrance contrôlée par Sniff-0, avec prise en compte de la respiration, de la stabilité du stimulus, de l’intensité et de la saillance.</p></div><div class="csi-sci-card dark"><h3>Mesures</h3><ul><li>p(same)</li><li>Accuracy</li><li>Temps de réponse</li><li>Indice global de Boundary Extension</li><li>Physiologie selon le protocole final</li></ul></div></div>`);
-        insertAfter(oasisIntro,oasisMethod);
-      }
-
-      // 9. TWIXOLF.
-      let twolfIntro=find(/Transposer la liaison temporelle à l.?olfaction/i,/^TWIXOLF\b/i);
-      if(twolfIntro && !/^TWIXOLF - Méthode$/i.test(twolfIntro.title||'')){
-        set(twolfIntro,'section','Études de l’année 2');set(twolfIntro,'kicker','TWIXOLF - Introduction');set(twolfIntro,'title','TWIXOLF - transposer la liaison temporelle à l’olfaction');
-        set(twolfIntro,'lead','TWIXOLF reprend la logique de jugement temporel après TWIXAV et SOFT, en tenant compte des contraintes propres à la délivrance olfactive et au cycle respiratoire.');
-      }
-      let twolfMethod=find(/^TWIXOLF - Méthode$/i);
-      if(!twolfMethod){
-        twolfMethod=make('Études de l’année 2','TWIXOLF - Méthode','TWIXOLF - Méthode','Le protocole adapte les décalages temporels et le jugement de simultanéité à une stimulation olfactive réellement synchronisée à l’inspiration.',`<div class="csi-sci-grid"><div class="csi-sci-card"><h3>Paradigme temporel</h3><ul><li>Olfaction + modalité de référence</li><li>Décalages temporels</li><li>Jugement de simultanéité</li></ul></div><div class="csi-sci-card"><h3>Synchronisation</h3><ul><li>Déclenchement sur inspiration</li><li>Sniff-0</li><li>Suivi respiratoire</li><li>PsychoPy, triggers et logs</li></ul></div><div class="csi-sci-card dark"><h3>Indices</h3><ul><li>p(same)</li><li>PSS</li><li>Largeur de fenêtre</li><li>Asymétrie</li><li>Stabilité des estimations</li></ul></div></div><div class="csi-sci-quote">Les SOA définitifs ne sont pas annoncés avant les pilotes. L’analyse doit se référer au moment où le stimulus devient réellement disponible au participant, pas seulement à l’horodatage logiciel.</div>`);
-        insertAfter(twolfIntro,twolfMethod);
-      }
-
-      // 10. Explicit scientific order after the program architecture.
-      if(architecture){
-        moveSequenceAfter(architecture,[twIntro,twMethod,twResults,twDiscussion,vibIntro,vibMethod,vibResults,vibDiscussion,year1,transition,softIntro,softMethod,oasisIntro,oasisMethod,twolfIntro,twolfMethod]);
-      }
-
-      // 11. Roadmap already validated for year 2.
-      const roadmap=find(/roadmap/i,/rétroplanning/i,/priorités à moyen terme/i);
-      if(roadmap && /SOFT/i.test(text(roadmap)) && /OASIS/i.test(text(roadmap)) && /TWIXOLF/i.test(text(roadmap))){
-        set(roadmap,'lead','La priorité est séquentielle : SOFT d’abord, puis OASIS, puis TWIXOLF, avec des décisions de poursuite fondées sur la faisabilité et la qualité des données. Les analyses finales de TWIXAV et VIBEX avancent en parallèle.');
-      }
-
-      // Final deterministic render of the scientific deck.
-      if(typeof w.renderSlides==='function')w.renderSlides();
-      else if(typeof C.render==='function')C.render();
-      else if(typeof w.render==='function')w.render();
-
-      // Reapply the validated per-study identity after the final render.
-      const SCI_COLORS={TWIXAV:'#2f6f9f',SOFT:'#7652a8',TWIXOLF:'#c36c32',VIBEX:'#2f7d5a',OASIS:'#b44e6c'};
-      slides.forEach((slide,i)=>{
-        const key=slide.study||((String(slide.title||'').match(/^(TWIXAV|VIBEX|SOFT|OASIS|TWIXOLF)\b/i)||[])[1]||'').toUpperCase();
-        if(key&&!slide.study)slide.study=key;
-        const el=d.getElementById(`slide-${i+1}`);
-        const color=SCI_COLORS[key];
-        if(el&&color){el.style.setProperty('--study',color);el.classList.add('v16-study-slide');}
-      });
-
-      // Remove obsolete CSI member if an old historical patch injected it.
-      setTimeout(()=>{
-        try{
-          [...d.querySelectorAll('.csi-member,.card')].forEach(el=>{if(/Jean-Pierre\s+THIBAUT/i.test(el.textContent||''))el.remove()});
-          const holder=d.querySelector('.csi-members');
-          if(holder){
-            const t=holder.textContent||'';
-            if(!/Fabrice Damon/i.test(t))holder.insertAdjacentHTML('beforeend','<div class="csi-member"><strong>Fabrice Damon</strong><span>Membre du Comité de Suivi Individuel</span></div>');
-            if(!/Camille Ferdenzi/i.test(t))holder.insertAdjacentHTML('beforeend','<div class="csi-member"><strong>Camille Ferdenzi-Lemaître</strong><span>Membre du Comité de Suivi Individuel</span></div>');
-          }
-        }catch(e){console.warn('CSI members cleanup',e)}
-      },120);
-    }catch(e){console.error('CSI scientific integration',e);w.__CSI_SCIENCE_20260905__=false;}
-  }
-})();
-</script>
 </body>
 </html>
