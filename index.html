@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version scientifique</div><h1>Chargement de la présentation</h1><p>Chargement de la présentation autonome avec identité visuelle par étude.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version scientifique intégrée</div><h1>Chargement de la présentation</h1><p>Chargement de la présentation autonome avec identité visuelle par étude.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
@@ -162,7 +162,7 @@
           setTimeout(integrateProjectSheets,900);
           setTimeout(integrateProjectSheets,1600);
           setTimeout(integrateProjectSheets,2600);
-          setTimeout(()=>boot.classList.add('hidden'),900);
+          setTimeout(()=>boot.classList.add('hidden'),2500);
         },{once:true});
         frame.srcdoc=base;
       }catch(e){
@@ -181,7 +181,10 @@
   const frame=document.getElementById('presentation');
   if(!frame)return;
 
-  const schedule=()=>[1540,1570,1590].forEach(ms=>setTimeout(applyScience,ms));
+  const schedule=()=>[1900,2150,2350].forEach(ms=>setTimeout(()=>{
+    try{const w=frame.contentWindow;if(w)w.__CSI_SCIENCE_20260905__=false;}catch(e){}
+    applyScience();
+  },ms));
   frame.addEventListener('load',schedule);
   if(frame.contentDocument && frame.contentDocument.readyState==='complete') schedule();
 
@@ -195,7 +198,9 @@
       const find=(...rx)=>slides.find(s=>rx.some(r=>r.test(text(s))));
       const set=(s,key,val)=>{if(!s)return;s[key]=val;if(s._fr)s._fr[key]=val};
       const make=(section,kicker,title,lead,content,notes='')=>{
-        const s={section,kicker,title,lead,content,notes};
+        const m=String(title||'').match(/^(TWIXAV|VIBEX|SOFT|OASIS|TWIXOLF)\b/i);
+        const study=m?m[1].toUpperCase():undefined;
+        const s={section,kicker,title,lead,content,notes,...(study?{study}:{})};
         s._fr={section,kicker,title,lead,content,notes};
         return s;
       };
@@ -345,8 +350,20 @@
         set(roadmap,'lead','La priorité est séquentielle : SOFT d’abord, puis OASIS, puis TWIXOLF, avec des décisions de poursuite fondées sur la faisabilité et la qualité des données. Les analyses finales de TWIXAV et VIBEX avancent en parallèle.');
       }
 
-      // Render once, before the existing poster/project-sheet integration runs.
-      if(typeof C.render==='function')C.render(); else if(typeof w.render==='function')w.render();
+      // Final deterministic render of the scientific deck.
+      if(typeof w.renderSlides==='function')w.renderSlides();
+      else if(typeof C.render==='function')C.render();
+      else if(typeof w.render==='function')w.render();
+
+      // Reapply the validated per-study identity after the final render.
+      const SCI_COLORS={TWIXAV:'#2f6f9f',SOFT:'#7652a8',TWIXOLF:'#c36c32',VIBEX:'#2f7d5a',OASIS:'#b44e6c'};
+      slides.forEach((slide,i)=>{
+        const key=slide.study||((String(slide.title||'').match(/^(TWIXAV|VIBEX|SOFT|OASIS|TWIXOLF)\b/i)||[])[1]||'').toUpperCase();
+        if(key&&!slide.study)slide.study=key;
+        const el=d.getElementById(`slide-${i+1}`);
+        const color=SCI_COLORS[key];
+        if(el&&color){el.style.setProperty('--study',color);el.classList.add('v16-study-slide');}
+      });
 
       // Remove obsolete CSI member if an old historical patch injected it.
       setTimeout(()=>{
