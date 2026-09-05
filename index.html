@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version autonome</div><h1>Chargement de la présentation</h1><p>Chargement de la présentation autonome avec identité visuelle par étude.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
+  <div id="boot"><div class="boot-card"><div class="boot-kicker">CSI-1 - version scientifique</div><h1>Chargement de la présentation</h1><p>Chargement de la présentation autonome avec identité visuelle par étude.</p><div class="bar"><span></span></div><div class="boot-error" id="bootError"></div></div></div>
   <iframe id="presentation" title="CSI 1 - Luc Perroquin" allowfullscreen></iframe>
   <script>
   (()=>{
@@ -46,7 +46,7 @@
       try{
         const d=frame.contentDocument;
         if(!d||!d.body)return false;
-        if(d.documentElement.dataset.projectSheets==='1')return true;
+        if(d.documentElement.dataset.projectSheets==='1'&&d.querySelector('.csi-sheet-actions'))return true;if(d.documentElement.dataset.projectSheets==='1'){d.documentElement.dataset.projectSheets='';d.getElementById('csiSheetViewer')?.remove();d.getElementById('csi-project-sheet-style')?.remove();}
 
         const style=d.createElement('style');
         style.id='csi-project-sheet-style';
@@ -181,7 +181,7 @@
   const frame=document.getElementById('presentation');
   if(!frame)return;
 
-  const schedule=()=>[80,180,360,620].forEach(ms=>setTimeout(applyScience,ms));
+  const schedule=()=>[1540,1570,1590].forEach(ms=>setTimeout(applyScience,ms));
   frame.addEventListener('load',schedule);
   if(frame.contentDocument && frame.contentDocument.readyState==='complete') schedule();
 
