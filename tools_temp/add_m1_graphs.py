@@ -21,8 +21,11 @@ tw_m=get('TWIXAV - Méthode')
 for obj in [tw_m,tw_m.get('_fr',{})]:
     if isinstance(obj,dict):
         c=obj.get('content','')
-        if 'Alicia Emorine' not in c:
-            c=c.replace('</div></div>','</div><div class="float-card m1"><b>Mémoire M1</b><span>Alicia Emorine</span></div></div>',1) if 'study-floating' in c else c
+        if 'Alicia Emorine' not in c and 'study-floating' in c:
+            pos=c.rfind('</div>')
+            if pos<0:raise SystemExit('TWIXAV floating-card end not found')
+            card='<div class="float-card m1"><b>Mémoire M1</b><span>Alicia Emorine</span></div>'
+            c=c[:pos]+card+c[pos:]
         obj['content']=c
 v_m=get('VIBEX - Méthode')
 for obj in [v_m,v_m.get('_fr',{})]:
@@ -46,7 +49,7 @@ for s in slides:
             if isinstance(obj,dict):
                 c=obj.get('content','')
                 c=c.replace('VIBEX a notamment donné lieu au mémoire M1 d’Olivia.','TWIXAV a donné lieu au mémoire M1 d’Alicia Emorine et VIBEX au mémoire M1 d’Olivia Hiridjee.')
-                c=c.replace('VIBEX a notamment donné lieu au mémoire M1 d\'Olivia.','TWIXAV a donné lieu au mémoire M1 d\'Alicia Emorine et VIBEX au mémoire M1 d\'Olivia Hiridjee.')
+                c=c.replace("VIBEX a notamment donné lieu au mémoire M1 d'Olivia.","TWIXAV a donné lieu au mémoire M1 d'Alicia Emorine et VIBEX au mémoire M1 d'Olivia Hiridjee.")
                 obj['content']=c
 
 newarr=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
