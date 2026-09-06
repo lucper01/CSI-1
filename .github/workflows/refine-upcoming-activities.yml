@@ -1,0 +1,85 @@
+name: Refine upcoming doctoral activities
+on:
+  push:
+    paths:
+      - '.github/workflows/refine-upcoming-activities.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update slides
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, json
+          p=Path('index.html')
+          h=p.read_text(encoding='utf-8')
+          m=re.search(r'const\s+slides\s*=\s*(\[.*?\]);\s*\n\s*const\s+mainSlides',h,re.S)
+          if not m: raise SystemExit('slides array not found')
+          slides=json.loads(m.group(1))
+
+          # Remove current slide 35 (Communications prévues)
+          before=len(slides)
+          slides=[s for s in slides if s.get('title')!='Communications prévues']
+          if len(slides)!=before-1:
+              raise SystemExit('Communications prévues slide not uniquely removed')
+
+          target=next((s for s in slides if s.get('title')=='Activités doctorales prévues - 2026-2027'),None)
+          if not target: raise SystemExit('upcoming activities slide not found')
+
+          fr_content='''<div class="v16-activity"><article><b>58 h eq. TD</b><h3>Enseignement</h3><p>20 h en L1 - méthodologie expérimentale en psychologie cognitive, 24 h en L2 - psychologie cognitive / attention, et 14 h de TER en L3.</p></article><article><b>60,5 h</b><h3>Formation doctorale</h3><p>29 h déjà prévues et 31,5 h planifiées pour 2026-2027, portant notamment sur l’éthique, la qualité en recherche, l’environnement académique, la publication et la gestion des données.</p><small>Projection cumulée : 120,5 h de formation doctorale.</small></article><article><b>1 M1</b><h3>Encadrement</h3><p>Un seul encadrement de mémoire de Master 1 est prévu pendant l’année 2026-2027, en articulation avec les travaux de thèse.</p></article><article class="tools"><b>4 rendez-vous</b><h3>Valorisation et diffusion</h3><p>La diffusion scientifique se poursuit en parallèle des collectes, sans diapo de calendrier séparée.</p><div class="v16-tool-pills"><span>Nuit des chercheurs</span><span>Expérimentarium</span><span>FJC</span><span>JDD</span></div><small>Communications et médiation scientifique prévues pendant l’année universitaire.</small></article></div>'''
+          en_content='''<div class="v16-activity"><article><b>58 tutorial-equivalent h</b><h3>Teaching</h3><p>20 h with first-year undergraduates in experimental methodology, 24 h with second-year undergraduates in cognitive psychology / attention, and 14 h of third-year research tutorials.</p></article><article><b>60.5 h</b><h3>Doctoral training</h3><p>29 h already planned plus 31.5 h scheduled for 2026-2027, including research ethics, quality in research, the academic environment, scientific publishing and research-data management.</p><small>Projected cumulative total: 120.5 h of doctoral training.</small></article><article><b>1 M1</b><h3>Supervision</h3><p>Only one Master 1 thesis supervision is planned during 2026-2027, linked to the PhD research programme.</p></article><article class="tools"><b>4 events</b><h3>Dissemination</h3><p>Scientific dissemination continues alongside data collection, without a separate communication-calendar slide.</p><div class="v16-tool-pills"><span>Researchers’ Night</span><span>Experimentarium</span><span>FJC</span><span>JDD</span></div><small>Scientific communication and outreach planned during the academic year.</small></article></div>'''
+
+          target['lead']='Les activités doctorales de l’année 2 sont désormais quantifiées et articulées avec les collectes prévues.'
+          target['content']=fr_content
+          target['notes']='Présenter les volumes prévisionnels : 58 h eq. TD d’enseignement, 60,5 h de formation doctorale et un seul encadrement M1.'
+          if isinstance(target.get('_fr'),dict):
+              target['_fr']['lead']=target['lead']
+              target['_fr']['content']=fr_content
+              target['_fr']['notes']=target['notes']
+          if isinstance(target.get('_en'),dict):
+              target['_en']['lead']='Year-2 doctoral activities are now quantified and coordinated with the planned data collections.'
+              target['_en']['content']=en_content
+              target['_en']['notes']='Present the planned volumes: 58 tutorial-equivalent teaching hours, 60.5 h of doctoral training and one Master 1 supervision.'
+
+          arr=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          h=h[:m.start(1)]+arr+h[m.end(1):]
+          p.write_text(h,encoding='utf-8')
+          print('slides',len(slides))
+          for i,s in enumerate(slides,1):
+              if 31<=i<=37: print(i,s.get('title'))
+          PY
+      - name: Validate update
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, json
+          h=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'const\s+slides\s*=\s*(\[.*?\]);\s*\n\s*const\s+mainSlides',h,re.S)
+          slides=json.loads(m.group(1))
+          titles=[s.get('title') for s in slides]
+          assert len(slides)==40, len(slides)
+          assert 'Communications prévues' not in titles
+          i=titles.index('Activités doctorales prévues - 2026-2027')
+          assert i==33, i
+          s=slides[i]
+          blob=json.dumps(s,ensure_ascii=False)
+          for x in ['58 h eq. TD','20 h en L1','24 h en L2','14 h de TER','60,5 h','29 h déjà prévues','31,5 h planifiées','120,5 h','1 M1','Un seul encadrement']:
+              assert x in blob, x
+          assert titles[i-1]=='Rétroplanning des études'
+          assert titles[i+1]=='Publications'
+          print('VALIDATION PASSED')
+          PY
+      - name: Commit and clean workflow
+        run: |
+          rm -f .github/workflows/refine-upcoming-activities.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Quantify upcoming doctoral activities and remove communications slide"
+          git push
