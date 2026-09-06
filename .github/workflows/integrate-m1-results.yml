@@ -1,0 +1,71 @@
+name: Integrate M1 graphs into CSI results
+on:
+  push:
+    paths:
+      - '.github/workflows/integrate-m1-results.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Integrate M1 result figures
+        run: python3 tools_temp/add_m1_graphs.py
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Validate desktop and mobile
+        run: |
+          python3 -m http.server 8000 >/tmp/csi-http.log 2>&1 &
+          cat > check-m1.js <<'EOF'
+          const { chromium }=require('playwright');
+          async function check(viewport,label){
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.stack||e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+            await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:30000});
+            await page.waitForTimeout(800);
+            const state=await page.evaluate(()=>{
+              const titles=slides.map(s=>String(s.title||''));
+              const ix=t=>titles.indexOf(t);
+              const tw=slides[ix('TWIXAV - Résultats')];
+              const vb=slides[ix('VIBEX - résultats du prétest et statut')];
+              const twm=slides[ix('TWIXAV - Méthode')];
+              const vbm=slides[ix('VIBEX - Méthode')];
+              const imgs=[...document.querySelectorAll('.m1-result-figure img')];
+              return {
+                slideCount:slides.length,
+                domSlides:document.querySelectorAll('.slide').length,
+                twGraph:String(tw?.content||'').includes('twixav_m1_alicia.svg'),
+                vbGraph:String(vb?.content||'').includes('vibex_m1_olivia.svg'),
+                twName:String(tw?.content||'').includes('Alicia Emorine')&&String(twm?.content||'').includes('Alicia Emorine'),
+                vbName:String(vb?.content||'').includes('Olivia Hiridjee')&&String(vbm?.content||'').includes('Olivia Hiridjee'),
+                assets:imgs.map(i=>({src:i.getAttribute('src'),width:i.naturalWidth,height:i.naturalHeight,complete:i.complete})),
+                coverDuplicate:document.querySelector('.slide .csi-institutions')!==null,
+                m1Figures:document.querySelectorAll('.m1-result-figure').length,
+                horizontalOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+4
+              };
+            });
+            console.log(label,JSON.stringify(state,null,2),'errors',JSON.stringify(errors));
+            if(errors.length||!state.twGraph||!state.vbGraph||!state.twName||!state.vbName||state.coverDuplicate||state.m1Figures<2||state.assets.length<2||state.assets.some(x=>!x.complete||x.width<100||x.height<100)||state.horizontalOverflow){throw new Error(label+' validation failed')}
+            await browser.close();
+          }
+          (async()=>{await check({width:1600,height:1000},'desktop');await check({width:690,height:1536},'mobile');console.log('M1 VALIDATION PASSED')})().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          EOF
+          node check-m1.js
+      - name: Commit validated result integration
+        run: |
+          rm -rf tools_temp
+          rm -f .github/workflows/integrate-m1-results.yml check-m1.js package.json package-lock.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Integrate M1 result graphs for TWIXAV and VIBEX"
+          git push
