@@ -45,15 +45,15 @@ jobs:
             const s=await p.evaluate(()=>{
               const titles=slides.map(x=>String(x.title||''));
               const idx=t=>titles.indexOf(t);
-              const body=document.body.innerText||'';
+              const all=JSON.stringify(slides);
               const forbidden=['Dispositifs expérimentaux et chaîne d’acquisition','Plateforme expérimentale','Affiches des études','Communications et médiation scientifique - calendrier envisagé'];
               const studySlides=[...document.querySelectorAll('.slide.v16-study-slide')];
               const tokens=[...document.querySelectorAll('.study-token')];
               const floats=[...document.querySelectorAll('.study-floating')];
               return {
                 count:titles.length,dom:document.querySelectorAll('.slide').length,visible:[...document.querySelectorAll('.slide')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().height>0).length,
-                forbidden:forbidden.filter(x=>titles.includes(x)),fete:body.includes('Fête de la Science'),central:/étude centrale|études centrales|collectes centrales/i.test(body),
-                m1:body.includes('Mémoire M1')&&body.includes('Olivia'),floats:floats.length,tokens:tokens.length,studySlides:studySlides.length,
+                forbidden:forbidden.filter(x=>titles.includes(x)),fete:all.includes('Fête de la Science'),central:/étude centrale|études centrales|collectes centrales/i.test(all),
+                m1:all.includes('Mémoire M1')&&all.includes('Olivia'),floats:floats.length,tokens:tokens.length,studySlides:studySlides.length,
                 order:[idx('Y a-t-il un espace-temps pour les odeurs ?'),idx('Encadrement et CSI'),idx('Deux axes'),idx('« No space, no time? » - le paradoxe de l’attention olfactive'),idx('Cinq études structurantes, des extensions clairement conditionnelles'),idx('Ce qui a été fait cette année'),idx('TWIXAV - pourquoi commencer par une fenêtre temporelle audiovisuelle ?'),idx('TWIXAV - Méthode'),idx('TWIXAV - Résultats'),idx('TWIXAV - ce que les résultats changent pour la suite'),idx('VIBEX - pourquoi établir une référence visuelle ?'),idx('VIBEX - Méthode'),idx('VIBEX - résultats du prétest et statut'),idx('VIBEX - ce que le prétest permet maintenant'),idx('FLUXOLF'),idx('Enseignement, formation et encadrement'),idx('Deux acquis expérimentaux structurent la suite'),idx('Ce que l’année 1 a sécurisé'),idx('Deux références, trois études prioritaires pour l’année 2'),idx('Trois études prioritaires'),idx('SOFT - mesurer le temps propre de chaque modalité'),idx('SOFT - Méthode'),idx('OASIS - tester l’influence olfactive sur la mémoire spatiale des scènes'),idx('OASIS - Méthode'),idx('TWIXOLF - transposer la liaison temporelle à l’olfaction'),idx('TWIXOLF - Méthode'),idx('Études complémentaires et exploratoires'),idx('Rétroplanning des études'),idx('Communications prévues'),idx('Publications'),idx('Points à discuter'),idx('Bilan'),idx('Merci pour votre attention')],
                 coloredNames:Object.fromEntries(['TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF','FLUXOLF','SORBET','SOLAR','COBEX','BRAUD','BRAUDOLF'].map(k=>[k,tokens.some(x=>x.dataset.study===k)]))
               };
