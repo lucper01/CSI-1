@@ -1,0 +1,98 @@
+name: Apply direct CSI update
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-direct-csi-update.yml'
+permissions:
+  contents: write
+jobs:
+  update-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix updater offsets and apply requested changes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('tools_temp/update_direct_20260906.py')
+          s=p.read_text(encoding='utf-8')
+          needle="# Re-serialize slide array only after all modifications and insertion.\nnewarr=json.dumps(slides,ensure_ascii=False,separators=(',',':'))"
+          repl="# Re-serialize slide array only after all modifications and insertion.\nm=re.search(r'const\\s+slides\\s*=\\s*(\\[.*?\\]);\\s*\\n\\s*const\\s+mainSlides',h,re.S)\nif not m: raise SystemExit('slides array disappeared after CSS update')\nnewarr=json.dumps(slides,ensure_ascii=False,separators=(',',':'))"
+          if needle not in s: raise SystemExit('updater patch point not found')
+          p.write_text(s.replace(needle,repl),encoding='utf-8')
+          PY
+          python3 tools_temp/update_direct_20260906.py
+      - name: Install Chromium validation tools
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Validate desktop and mobile
+        run: |
+          python3 -m http.server 8000 >/tmp/csi-http.log 2>&1 &
+          cat > validate.js <<'EOF'
+          const { chromium }=require('playwright');
+          async function check(viewport,label){
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.stack||e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+            await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(2200);
+            const state=await page.evaluate(()=>{
+              const titles=slides.map(s=>String(s.title||''));
+              const idx=t=>titles.indexOf(t);
+              const activity=slides[idx('Enseignement, formation et encadrement')];
+              const jdd=slides[idx('JDD 2026 - faire connaître STOLF')];
+              const retro=slides[idx('Rétroplanning des études')];
+              const floats=[...document.querySelectorAll('.study-floating')];
+              const pubToken=document.querySelector('.v16-pubs p .study-token');
+              const comm=document.querySelector('.v16-comms');
+              const actEl=document.querySelector('.v16-activity');
+              const jddEl=document.querySelector('.v16-jdd');
+              const all=JSON.stringify(slides);
+              return {
+                slideCount:slides.length,
+                mainCount:slides.filter(s=>!s.appendix).length,
+                domCount:document.querySelectorAll('.slide').length,
+                visible:document.querySelectorAll('.slide.active').length || [...document.querySelectorAll('.slide')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().height>0).length,
+                activityIndex:idx('Enseignement, formation et encadrement'),
+                jddIndex:idx('JDD 2026 - faire connaître STOLF'),
+                hasTools:['Lab Inventory','Participant Manager','Dilution Manager','Portfolio','Alicia Emorine','Olivia Hiridjee','mémoire de scènes visuelles'].every(x=>String(activity?.content||'').includes(x)),
+                hasAward:String(jdd?.content||'').includes('Prix de l’originalité'),
+                retroNoSmall:!String(retro?.content||'').includes('<small>'),
+                cobexBeforeSolar:String(retro?.content||'').indexOf('COBEX')>=0 && String(retro?.content||'').indexOf('COBEX')<String(retro?.content||'').indexOf('SOLAR'),
+                floatCount:floats.length,
+                floatsRelative:floats.every(x=>getComputedStyle(x).position==='relative'),
+                pubTokenWidth:pubToken?getComputedStyle(pubToken).width:'missing',
+                pubTokenText:pubToken?.textContent||'',
+                commColumns:comm?getComputedStyle(comm).gridTemplateColumns:'missing',
+                commMarginLeft:comm?getComputedStyle(comm).marginLeft:'missing',
+                activityColumns:actEl?getComputedStyle(actEl).gridTemplateColumns:'missing',
+                jddDisplay:jddEl?getComputedStyle(jddEl).display:'missing',
+                oldStandaloneFete:all.includes('Fête de la Science'),
+                duplicateCover:all.includes('Référent de l’École Doctorale - responsable du suivi')
+              };
+            });
+            console.log(label,JSON.stringify(state,null,2),'ERRORS',JSON.stringify(errors));
+            const pubOK=state.pubTokenWidth!=='missing' && state.pubTokenWidth!=='38px' && /OASIS|TWIXOLF/.test(state.pubTokenText);
+            if(errors.length||state.slideCount!==41||state.mainCount!==39||state.domCount!==41||state.visible<1||state.jddIndex!==state.activityIndex+1||!state.hasTools||!state.hasAward||!state.retroNoSmall||!state.cobexBeforeSolar||state.floatCount<5||!state.floatsRelative||!pubOK||state.commColumns==='missing'||state.jddDisplay==='missing'||state.oldStandaloneFete||state.duplicateCover){
+              throw new Error(label+' validation failed');
+            }
+            await browser.close();
+          }
+          (async()=>{await check({width:1920,height:1080},'desktop');await check({width:690,height:1536},'mobile');console.log('VALIDATION PASSED')})().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          EOF
+          node validate.js
+      - name: Commit only validated presentation
+        run: |
+          rm -rf tools_temp
+          rm -f .github/workflows/apply-direct-csi-update.yml validate.js package.json package-lock.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Refine CSI timelines, activities and JDD communication"
+          git push
