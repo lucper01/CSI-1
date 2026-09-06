@@ -1,0 +1,54 @@
+name: Validate public CSI runtime
+on:
+  push:
+    paths:
+      - '.github/workflows/public-runtime-check.yml'
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Validate public page
+        run: |
+          cat > check.js <<'EOF'
+          const { chromium } = require('playwright');
+          async function check(viewport,label){
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage({viewport});
+            const errors=[];
+            p.on('pageerror',e=>errors.push(e.stack||e.message));
+            p.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+            const r=await p.goto('https://lucper01.github.io/CSI-1/?publiccheck=d2b21b48',{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForTimeout(2500);
+            const s=await p.evaluate(()=>({
+              status:document.readyState,
+              single:document.documentElement.dataset.singleLayer||'',
+              iframes:document.querySelectorAll('iframe#presentation').length,
+              slides:document.querySelectorAll('.slide').length,
+              visible:[...document.querySelectorAll('.slide')].filter(el=>{const r=el.getBoundingClientRect(),c=getComputedStyle(el);return c.display!=='none'&&c.visibility!=='hidden'&&r.width>0&&r.height>0}).length,
+              first:(document.querySelector('.slide')?.innerText||'').slice(0,400),
+              body:(document.body?.innerText||'').slice(0,1000),
+              sela:(document.body?.innerText||'').includes('No space, no time?')
+            }));
+            console.log(label,'HTTP',r?.status(),'STATE',JSON.stringify(s),'ERRORS',JSON.stringify(errors));
+            if(r?.status()!==200||errors.length||s.single!=='1'||s.iframes!==0||s.slides!==44||s.visible<1||!s.first.trim()||!s.sela) throw new Error(label+' public validation failed');
+            await b.close();
+          }
+          (async()=>{await check({width:1600,height:1000},'desktop');await check({width:690,height:1536},'mobile');console.log('PUBLIC VALIDATION PASSED')})().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          EOF
+          node check.js
+      - name: Remove public validator
+        if: always()
+        run: |
+          rm -f .github/workflows/public-runtime-check.yml check.js package.json package-lock.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          if ! git diff --cached --quiet; then git commit -m "Remove public CSI validator"; git push; fi
