@@ -1,0 +1,50 @@
+name: Validate public CSI mobile
+on:
+  push:
+    paths:
+      - '.github/workflows/public-mobile-check.yml'
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Validate public mobile page
+        run: |
+          cat > check.js <<'EOF'
+          const { chromium }=require('playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage({viewport:{width:690,height:1536}});
+            const errors=[];
+            p.on('pageerror',e=>errors.push(e.stack||e.message));
+            p.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+            const r=await p.goto('https://lucper01.github.io/CSI-1/?mobilecheck=final',{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForTimeout(2500);
+            const s=await p.evaluate(()=>{
+              const els=[...document.querySelectorAll('.slide')];
+              const titles=(typeof slides!=='undefined'&&Array.isArray(slides))?slides.map(x=>String(x?.title||'')):[];
+              const visible=els.filter(el=>{const r=el.getBoundingClientRect(),c=getComputedStyle(el);return c.display!=='none'&&c.visibility!=='hidden'&&r.width>0&&r.height>0});
+              return {single:document.documentElement.dataset.singleLayer||'',iframes:document.querySelectorAll('iframe#presentation').length,slides:els.length,visible:visible.length,first:(visible[0]?.innerText||'').slice(0,500),titles,sela:titles.some(t=>t.includes('No space, no time?')),tw:titles.some(t=>t.includes('TWIXAV - Résultats')),oasis:titles.some(t=>t.includes('OASIS - Méthode'))};
+            });
+            console.log('MOBILE PUBLIC',r?.status(),JSON.stringify(s,null,2),'ERRORS',JSON.stringify(errors));
+            if(r?.status()!==200||errors.length||s.single!=='1'||s.iframes!==0||s.slides!==44||s.visible<1||!s.first.trim()||!s.sela||!s.tw||!s.oasis) throw new Error('mobile public validation failed');
+            console.log('PUBLIC MOBILE VALIDATION PASSED');
+            await b.close();
+          })().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          EOF
+          node check.js
+      - name: Remove validator
+        if: always()
+        run: |
+          rm -f .github/workflows/public-mobile-check.yml check.js package.json package-lock.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          if ! git diff --cached --quiet; then git commit -m "Remove public mobile validator"; git push; fi
