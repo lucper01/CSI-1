@@ -52,8 +52,9 @@ jobs:
               const floats=[...document.querySelectorAll('.study-floating')];
               return {
                 count:titles.length,dom:document.querySelectorAll('.slide').length,visible:[...document.querySelectorAll('.slide')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().height>0).length,
-                forbidden:forbidden.filter(x=>titles.includes(x)),fete:all.includes('Fête de la Science'),central:/étude centrale|études centrales|collectes centrales/i.test(all),
+                forbidden:forbidden.filter(x=>titles.includes(x)),fete:all.includes('Fête de la Science'),
                 m1:all.includes('Mémoire M1')&&all.includes('Olivia'),floats:floats.length,tokens:tokens.length,studySlides:studySlides.length,
+                equalStatus:all.includes('Cinq études structurantes, des extensions clairement conditionnelles')&&all.includes('sans hiérarchie de centralité entre TWIXAV, VIBEX, SOFT, OASIS et TWIXOLF'),
                 order:[idx('Y a-t-il un espace-temps pour les odeurs ?'),idx('Encadrement et CSI'),idx('Deux axes'),idx('« No space, no time? » - le paradoxe de l’attention olfactive'),idx('Cinq études structurantes, des extensions clairement conditionnelles'),idx('Ce qui a été fait cette année'),idx('TWIXAV - pourquoi commencer par une fenêtre temporelle audiovisuelle ?'),idx('TWIXAV - Méthode'),idx('TWIXAV - Résultats'),idx('TWIXAV - ce que les résultats changent pour la suite'),idx('VIBEX - pourquoi établir une référence visuelle ?'),idx('VIBEX - Méthode'),idx('VIBEX - résultats du prétest et statut'),idx('VIBEX - ce que le prétest permet maintenant'),idx('FLUXOLF'),idx('Enseignement, formation et encadrement'),idx('Deux acquis expérimentaux structurent la suite'),idx('Ce que l’année 1 a sécurisé'),idx('Deux références, trois études prioritaires pour l’année 2'),idx('Trois études prioritaires'),idx('SOFT - mesurer le temps propre de chaque modalité'),idx('SOFT - Méthode'),idx('OASIS - tester l’influence olfactive sur la mémoire spatiale des scènes'),idx('OASIS - Méthode'),idx('TWIXOLF - transposer la liaison temporelle à l’olfaction'),idx('TWIXOLF - Méthode'),idx('Études complémentaires et exploratoires'),idx('Rétroplanning des études'),idx('Communications prévues'),idx('Publications'),idx('Points à discuter'),idx('Bilan'),idx('Merci pour votre attention')],
                 coloredNames:Object.fromEntries(['TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF','FLUXOLF','SORBET','SOLAR','COBEX','BRAUD','BRAUDOLF'].map(k=>[k,tokens.some(x=>x.dataset.study===k)]))
               };
@@ -61,7 +62,7 @@ jobs:
             console.log(label,JSON.stringify(s,null,2),'errors',JSON.stringify(errors));
             const increasing=s.order.every((v,i)=>v>=0&&(i===0||v>s.order[i-1]));
             const colors=Object.values(s.coloredNames).every(Boolean);
-            if(errors.length||s.count!==40||s.dom!==40||s.visible<1||s.forbidden.length||s.fete||s.central||!s.m1||s.floats<6||s.tokens<20||s.studySlides<15||!increasing||!colors) throw new Error(label+' validation failed');
+            if(errors.length||s.count!==40||s.dom!==40||s.visible<1||s.forbidden.length||s.fete||!s.m1||!s.equalStatus||s.floats<6||s.tokens<20||s.studySlides<15||!increasing||!colors) throw new Error(label+' validation failed');
             await b.close();
           }
           (async()=>{await run({width:1600,height:1000},'desktop');await run({width:690,height:1536},'mobile');console.log('VALIDATION PASSED')})().catch(e=>{console.error(e.stack||e);process.exit(1)});
