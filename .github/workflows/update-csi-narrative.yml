@@ -1,0 +1,78 @@
+name: Update CSI narrative and study identity
+on:
+  push:
+    paths:
+      - '.github/workflows/update-csi-narrative.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix mention wrapper and update single-layer index
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('tools_temp/update_csi.py')
+          s=p.read_text(encoding='utf-8')
+          old="const p=n.parentElement;if(!p||p.closest('.study-token,[data-study],script,style,code,.v16-acronym'))return p?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;\n      return NodeFilter.FILTER_REJECT;"
+          new="const p=n.parentElement;if(!p)return NodeFilter.FILTER_REJECT;if(p.closest('.study-token,[data-study],script,style,code,.v16-acronym'))return NodeFilter.FILTER_REJECT;\n      return NodeFilter.FILTER_ACCEPT;"
+          if old not in s: raise SystemExit('mention-wrapper pattern not found')
+          p.write_text(s.replace(old,new),encoding='utf-8')
+          PY
+          python3 tools_temp/update_csi.py
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Validate desktop and mobile rendering
+        run: |
+          python3 -m http.server 8000 >/tmp/csi-http.log 2>&1 &
+          cat > check.js <<'EOF'
+          const { chromium }=require('playwright');
+          async function run(viewport,label){
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage({viewport});
+            const errors=[];
+            p.on('pageerror',e=>errors.push(e.stack||e.message));
+            p.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+            await p.goto('http://127.0.0.1:8000/index.html',{waitUntil:'domcontentloaded',timeout:30000});
+            await p.waitForTimeout(1800);
+            const s=await p.evaluate(()=>{
+              const titles=slides.map(x=>String(x.title||''));
+              const idx=t=>titles.indexOf(t);
+              const body=document.body.innerText||'';
+              const forbidden=['Dispositifs expérimentaux et chaîne d’acquisition','Plateforme expérimentale','Affiches des études','Communications et médiation scientifique - calendrier envisagé'];
+              const studySlides=[...document.querySelectorAll('.slide.v16-study-slide')];
+              const tokens=[...document.querySelectorAll('.study-token')];
+              const floats=[...document.querySelectorAll('.study-floating')];
+              return {
+                count:titles.length,dom:document.querySelectorAll('.slide').length,visible:[...document.querySelectorAll('.slide')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().height>0).length,
+                forbidden:forbidden.filter(x=>titles.includes(x)),fete:body.includes('Fête de la Science'),central:/étude centrale|études centrales|collectes centrales/i.test(body),
+                m1:body.includes('Mémoire M1')&&body.includes('Olivia'),floats:floats.length,tokens:tokens.length,studySlides:studySlides.length,
+                order:[idx('Y a-t-il un espace-temps pour les odeurs ?'),idx('Encadrement et CSI'),idx('Deux axes'),idx('« No space, no time? » - le paradoxe de l’attention olfactive'),idx('Cinq études structurantes, des extensions clairement conditionnelles'),idx('Ce qui a été fait cette année'),idx('TWIXAV - pourquoi commencer par une fenêtre temporelle audiovisuelle ?'),idx('TWIXAV - Méthode'),idx('TWIXAV - Résultats'),idx('TWIXAV - ce que les résultats changent pour la suite'),idx('VIBEX - pourquoi établir une référence visuelle ?'),idx('VIBEX - Méthode'),idx('VIBEX - résultats du prétest et statut'),idx('VIBEX - ce que le prétest permet maintenant'),idx('FLUXOLF'),idx('Enseignement, formation et encadrement'),idx('Deux acquis expérimentaux structurent la suite'),idx('Ce que l’année 1 a sécurisé'),idx('Deux références, trois études prioritaires pour l’année 2'),idx('Trois études prioritaires'),idx('SOFT - mesurer le temps propre de chaque modalité'),idx('SOFT - Méthode'),idx('OASIS - tester l’influence olfactive sur la mémoire spatiale des scènes'),idx('OASIS - Méthode'),idx('TWIXOLF - transposer la liaison temporelle à l’olfaction'),idx('TWIXOLF - Méthode'),idx('Études complémentaires et exploratoires'),idx('Rétroplanning des études'),idx('Communications prévues'),idx('Publications'),idx('Points à discuter'),idx('Bilan'),idx('Merci pour votre attention')],
+                coloredNames:Object.fromEntries(['TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF','FLUXOLF','SORBET','SOLAR','COBEX','BRAUD','BRAUDOLF'].map(k=>[k,tokens.some(x=>x.dataset.study===k)]))
+              };
+            });
+            console.log(label,JSON.stringify(s,null,2),'errors',JSON.stringify(errors));
+            const increasing=s.order.every((v,i)=>v>=0&&(i===0||v>s.order[i-1]));
+            const colors=Object.values(s.coloredNames).every(Boolean);
+            if(errors.length||s.count!==40||s.dom!==40||s.visible<1||s.forbidden.length||s.fete||s.central||!s.m1||s.floats<6||s.tokens<20||s.studySlides<15||!increasing||!colors) throw new Error(label+' validation failed');
+            await b.close();
+          }
+          (async()=>{await run({width:1600,height:1000},'desktop');await run({width:690,height:1536},'mobile');console.log('VALIDATION PASSED')})().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          EOF
+          node check.js
+      - name: Commit validated single-layer update
+        run: |
+          rm -rf tools_temp
+          rm -f .github/workflows/update-csi-narrative.yml check.js package.json package-lock.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Refine CSI narrative, study colors and integrated resources"
+          git push
