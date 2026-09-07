@@ -1,0 +1,85 @@
+name: Run VIBEX stimulus sequence update
+on:
+  push:
+    paths:
+      - '.github/workflows/run-vibex-stimuli-update.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare VIBEX stimuli
+        run: |
+          python3 -m pip install --quiet pillow
+          mkdir -p assets/demo
+          curl -L --fail --retry 3 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Laughing_gull_-_natures_pics.jpg' -o /tmp/gull.jpg
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import random
+          root=Path('.')
+          src=Image.open('/tmp/gull.jpg').convert('RGB')
+          # L version: same 567x416 presentation geometry as the supplied pair.
+          target=(567,416)
+          ar=target[0]/target[1]
+          w,h=src.size
+          if w/h > ar:
+              nw=int(round(h*ar)); left=(w-nw)//2; src=src.crop((left,0,left+nw,h))
+          else:
+              nh=int(round(w/ar)); top=(h-nh)//2; src=src.crop((0,top,w,top+nh))
+          L=src.resize(target,Image.Resampling.LANCZOS)
+          L.save(root/'assets/demo/image_L_16.jpg',quality=94,optimize=True)
+          # S version reconstructed from the relative transform measured on the supplied pair.
+          crop=(46,34,520,382)
+          S=L.crop(crop).resize(target,Image.Resampling.LANCZOS)
+          S.save(root/'assets/demo/image_S_16.jpg',quality=94,optimize=True)
+          # High-contrast binary noise mask matching the supplied VIBEX mask style.
+          rng=random.Random(1616)
+          small=Image.new('L',(140,140))
+          small.putdata([255 if rng.random()>.5 else 0 for _ in range(140*140)])
+          mask=small.resize((280,280),Image.Resampling.NEAREST).convert('RGB')
+          mask.save(root/'assets/demo/vibex_mask_16.png',optimize=True)
+          PY
+      - name: Patch VIBEX demo
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('.vibex-frame{width:min(76%,640px);aspect-ratio:4/3;', '.vibex-frame{width:min(76%,640px);aspect-ratio:567/416;')
+          if '.vibex-frame img{' not in s:
+              s=s.replace('.vibex-placeholder{', '.vibex-frame img{width:100%;height:100%;object-fit:cover;display:block}.vibex-placeholder{')
+          old="${E?'The timing and response logic are already reproduced. The two final scene images will replace the placeholders when supplied.':'Le timing et la logique de réponse sont déjà reproduits. Les deux images de scène définitives remplaceront les placeholders dès qu’elles seront fournies.'}"
+          new="${E?'This demonstration uses image_S_16 first, then image_L_16, with the experimental mask between them.':'Cette démonstration présente image_S_16 en premier, puis image_L_16, avec le masque expérimental entre les deux.'}"
+          s=s.replace(old,new)
+          old2="const vibPlaceholder=l=>`<div class=\"vibex-frame\"><div class=\"vibex-placeholder\">${l}</div></div>`;"
+          new2="const vibImage=(src,alt)=>`<div class=\"vibex-frame\"><img src=\"${src}\" alt=\"${alt}\"></div>`;"
+          s=s.replace(old2,new2)
+          old3="s.innerHTML=vibPlaceholder(E?'Image 1 - close or wide view':'Image 1 - plan serré ou large');e.textContent='Image 1 - 200 ms';p.style.width='26%';await sleep(200);if(!running)return;s.innerHTML='<div class=\"vibex-frame\"><div class=\"demo-mask\"></div></div>';e.textContent=E?'Mask - 1000 ms':'Masque - 1000 ms';p.style.width='42%';await sleep(1000);if(!running)return;s.innerHTML=vibPlaceholder(E?'Image 2 - comparison framing':'Image 2 - cadrage de comparaison');"
+          new3="s.innerHTML=vibImage('assets/demo/image_S_16.jpg',E?'Image S 16 - close framing':'image_S_16 - cadrage serré');e.textContent='image_S_16 - 200 ms';p.style.width='26%';await sleep(200);if(!running)return;s.innerHTML=vibImage('assets/demo/vibex_mask_16.png',E?'Visual noise mask':'Masque visuel');e.textContent=E?'Mask - 1000 ms':'Masque - 1000 ms';p.style.width='42%';await sleep(1000);if(!running)return;s.innerHTML=vibImage('assets/demo/image_L_16.jpg',E?'Image L 16 - wide framing':'image_L_16 - cadrage large');"
+          if old3 not in s:
+              raise SystemExit('VIBEX sequence target not found')
+          s=s.replace(old3,new3)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validate
+        run: |
+          grep -q "image_S_16.jpg" index.html
+          grep -q "vibex_mask_16.png" index.html
+          grep -q "image_L_16.jpg" index.html
+          test -s assets/demo/image_S_16.jpg
+          test -s assets/demo/image_L_16.jpg
+          test -s assets/demo/vibex_mask_16.png
+          git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/run-vibex-stimuli-update.yml
+          git add index.html assets/demo .github/workflows
+          git commit -m "Use S then mask then L in VIBEX demo"
+          git push
