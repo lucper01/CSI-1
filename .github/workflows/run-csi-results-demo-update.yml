@@ -1,0 +1,39 @@
+name: Run CSI results and demo update
+on:
+  push:
+    paths:
+      - '.github/workflows/run-csi-results-demo-update.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update CSI results and demos
+        run: python3 tools_temp/update_csi_results_demo.py
+      - name: Validate update
+        run: |
+          grep -q 'TWIXAV - les courbes empiriques' index.html
+          grep -q 'TWIXAV - la fenêtre se rétrécit avec la durée' index.html
+          grep -q 'VIBEX - l.asymétrie SL-LS reproduit la Boundary Extension' index.html
+          grep -q 'data-demo-open=\\"twixav\\"' index.html
+          grep -q 'data-demo-open=\\"vibex\\"' index.html
+          test -s assets/results/twixav_empirical_curves.svg
+          test -s assets/results/twixav_tbw_width.svg
+          test -s assets/results/twixav_pss_asymmetry.svg
+          test -s assets/results/vibex_conditions.svg
+          test -s assets/results/vibex_size_interaction.svg
+          test -s assets/results/vibex_rt_interaction.svg
+          ! git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f tools_temp/update_csi_results_demo.py
+          rm -f .github/workflows/run-csi-results-demo-update.yml
+          git add -A index.html assets/results tools_temp .github
+          git commit -m "Expand TWIXAV and VIBEX results with interactive demos"
+          git push
