@@ -31,3 +31,4 @@ jobs:
           git add -A index.html tools_temp .github
           git commit -m "Segment CSI presentation into major sections"
           git push
+# rerun after FLUXOLF card matcher fix
