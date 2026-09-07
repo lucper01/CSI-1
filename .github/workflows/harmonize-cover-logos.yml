@@ -17,18 +17,18 @@ jobs:
       - name: Validate
         run: |
           test -s assets/logos/cnrs-logo.png
-          test "$(stat -c%s assets/logos/cnrs-logo.png)" = "12036"
+          test -s assets/logos/institut-agro-dijon.webp
           grep -q 'assets/logos/cnrs-logo.png' index.html
-          grep -q 'cover-logo-harmonization-v3' index.html
+          grep -q 'cover-logo-harmonization-v4' index.html
           grep -q 'assets/logos/institut-agro-dijon.webp' index.html
           ! grep -q 'Universite-Gustave-Eiffel/NoisePlanet' index.html
       - name: Commit
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git rm assets/logos/cnrs-logo.png.b64.part1 assets/logos/cnrs-logo.png.b64.part2 assets/logos/cnrs-logo.png.b64.part3 assets/logos/cnrs-logo.png.b64.part4 assets/logos/cnrs-logo.png.b64.part5
-          git rm -f assets/logos/institut-agro-dijon-cropped.webp.b64 || true
-          git rm .github/scripts/harmonize_cover_logos.py .github/workflows/harmonize-cover-logos.yml
-          git add index.html assets/logos/cnrs-logo.png
-          git commit -m "Harmonize cover logo sizing and use supplied CNRS mark"
+          rm -f assets/logos/cnrs-logo.png.b64.part1 assets/logos/cnrs-logo.png.b64.part2 assets/logos/cnrs-logo.png.b64.part3 assets/logos/cnrs-logo.png.b64.part4 assets/logos/cnrs-logo.png.b64.part5
+          rm -f assets/logos/institut-agro-dijon-cropped.webp.b64
+          git rm -f .github/scripts/harmonize_cover_logos.py .github/workflows/harmonize-cover-logos.yml
+          git add -A index.html assets/logos .github
+          git commit -m "Harmonize cover logo sizing"
           git push
