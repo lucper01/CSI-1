@@ -1645,9 +1645,28 @@
 .slide.csi-focus-enabled .csi-focus-target.csi-focus-active>span:not(.study-token){color:#fff!important}
 .slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,p,li,span,small,strong,b,em,.mono,.muted,figcaption){color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.34)}
 .slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,strong,b,.mono){font-weight:950!important}
-.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(.study-token,.v16-pills span,.v16-tool-pills span,.m1-stat-grid>div){background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.34)!important;color:#fff!important}
+.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(.v16-tool-pills span,.m1-stat-grid>div){background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.34)!important;color:#fff!important}
 .slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div :is(b,span){color:#fff!important}
 .slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div{box-shadow:none!important}
+
+/* Study identities stay visible inside a focused card. This comes after the generic white-text rules. */
+.slide.csi-focus-enabled .csi-focus-target.csi-focus-active .study-token[data-study],
+.slide.csi-focus-enabled .csi-focus-target.csi-focus-active [data-study]:not(.csi-focus-target){
+  --badge-study:var(--study-color,var(--study,var(--focus-color)));
+  background:linear-gradient(145deg,color-mix(in srgb,var(--badge-study) 88%,#111),color-mix(in srgb,var(--badge-study) 82%,#000))!important;
+  color:#fff!important;
+  border-color:color-mix(in srgb,var(--badge-study) 72%,#fff)!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.48),0 4px 12px color-mix(in srgb,var(--badge-study) 34%,transparent)!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.34)!important;
+}
+.slide.csi-focus-enabled .csi-focus-target.csi-focus-active .study-year-name[data-study],
+.slide.csi-focus-enabled .csi-focus-target.csi-focus-active .v16-pills [data-study]{
+  padding:5px 9px!important;
+  border-radius:999px!important;
+  font-weight:950!important;
+}
+.slide.csi-focus-enabled .csi-focus-target.csi-focus-active .v16-pills [data-study]{padding:7px 10px!important}
+
 body.reduced-motion .csi-focus-target{transition:none!important;transform:none!important}
 @media(max-width:850px){.slide.csi-focus-enabled .csi-focus-target.csi-focus-active{transform:none}}
 </style>
@@ -1881,9 +1900,20 @@ body.reduced-motion .csi-focus-target{transition:none!important;transform:none!i
   const SELECTOR=['.grid > .card','.v16-axes > article','.v16-year-grid > article','.v16-checks > article','.v16-priority > article','.v16-study-grid > .v16-study-card','.v16-extension-map > article','.v16-activity > article','.v16-jdd > article','.v16-pubs > article','.v16-decisions > article','.v16-summary > article','.v16-plan > article','.v16-retro > section','.m1-stat-grid','.m1-key-result','.m1-result-figure'].join(',');
   let stepBySlide=new Map(),pendingEntry='first',bypassButtons=false,scheduled=false;
   function activeSlide(){return document.querySelector('#deck .slide.active')}
+  function slideStudy(el){
+    const slide=el?.closest('.slide');
+    const idx=Number(slide?.dataset.index);
+    const meta=Number.isInteger(idx)&&typeof slides!=='undefined'?slides[idx]:null;
+    const study=String(meta&&meta.study||'').toUpperCase();
+    return COLORS[study]?study:'';
+  }
   function inferStudy(el){
+    /* Study-specific slides keep their own identity color. Cross-study names stay separate badges. */
+    const slideOwn=slideStudy(el);if(slideOwn)return slideOwn;
     const own=String(el.dataset.study||'').toUpperCase();if(COLORS[own])return own;
-    const parent=el.closest('[data-study]');const ps=String(parent&&parent.dataset.study||'').toUpperCase();if(COLORS[ps])return ps;
+    const parent=el.parentElement?.closest('[data-study]');const ps=String(parent&&parent.dataset.study||'').toUpperCase();if(COLORS[ps])return ps;
+    const nested=[...el.querySelectorAll('[data-study]')].map(n=>String(n.dataset.study||'').toUpperCase()).filter(k=>COLORS[k]);
+    const unique=[...new Set(nested)];if(unique.length===1)return unique[0];if(unique.length>1)return '';
     const heading=String(el.querySelector('h3,h4')?.textContent||'').toUpperCase();
     const found=NAMES.filter(n=>new RegExp('(^|[^A-Z])'+n+'([^A-Z]|$)').test(heading));return found.length===1?found[0]:'';
   }
