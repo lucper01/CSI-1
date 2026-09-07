@@ -1,0 +1,63 @@
+name: Improve focus contrast
+on:
+  push:
+    paths:
+      - '.github/workflows/improve-focus-contrast.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Improve active focus contrast
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          p=Path('index.html')
+          save=Path('index_save.html')
+          before=hashlib.sha256(save.read_bytes()).hexdigest()
+          h=p.read_text(encoding='utf-8')
+
+          old="""  background:linear-gradient(145deg,color-mix(in srgb,var(--focus-color) 92%,#111),var(--focus-color))!important;\n  color:#fff!important;"""
+          new="""  background:linear-gradient(145deg,color-mix(in srgb,var(--focus-color) 72%,#111),color-mix(in srgb,var(--focus-color) 78%,#000))!important;\n  color:#fff!important;"""
+          if old not in h:
+              raise SystemExit('active focus background marker not found')
+          h=h.replace(old,new,1)
+
+          marker=""".slide.csi-focus-enabled .csi-focus-target.csi-focus-active>span:not(.study-token){color:rgba(255,255,255,.84)!important}\n\n"""
+          addition=""".slide.csi-focus-enabled .csi-focus-target.csi-focus-active>span:not(.study-token){color:#fff!important}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,p,li,span,small,strong,b,em,.mono,.muted,figcaption){\n  color:#fff!important;\n  text-shadow:0 1px 2px rgba(0,0,0,.34);\n}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,strong,b,.mono){\n  font-weight:950!important;\n}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(.study-token,.v16-pills span,.v16-tool-pills span,.m1-stat-grid>div){\n  background:rgba(255,255,255,.14)!important;\n  border-color:rgba(255,255,255,.34)!important;\n  color:#fff!important;\n}\n.slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div :is(b,span){color:#fff!important}\n.slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div{box-shadow:none!important}\n\n"""
+          if marker not in h:
+              raise SystemExit('focus text marker not found')
+          h=h.replace(marker,addition,1)
+
+          p.write_text(h,encoding='utf-8')
+          after=hashlib.sha256(save.read_bytes()).hexdigest()
+          if before!=after:
+              raise SystemExit('index_save.html changed unexpectedly')
+          PY
+      - name: Validate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          h=Path('index.html').read_text(encoding='utf-8')
+          s=Path('index_save.html').read_text(encoding='utf-8')
+          assert 'color-mix(in srgb,var(--focus-color) 72%,#111)' in h
+          assert 'text-shadow:0 1px 2px rgba(0,0,0,.34)' in h
+          assert 'font-weight:950!important' in h
+          assert '.m1-stat-grid.csi-focus-active>div' in h
+          assert 'csi-progressive-focus-runtime' not in s
+          print('VALIDATION PASSED')
+          PY
+      - name: Commit index only
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/improve-focus-contrast.yml
+          git add index.html .github/workflows/improve-focus-contrast.yml
+          git commit -m "Increase contrast for progressive focus text"
+          git push
