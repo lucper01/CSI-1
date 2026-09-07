@@ -1,0 +1,35 @@
+name: Replace cover logos
+on:
+  push:
+    paths:
+      - '.github/workflows/replace-cover-logos.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Replace logos
+        run: |
+          mkdir -p assets/logos
+          base64 -d assets/logos/institut-agro-dijon.webp.b64 > assets/logos/institut-agro-dijon.webp
+          python3 .github/scripts/replace_cover_logos.py
+      - name: Validate
+        run: |
+          test -s assets/logos/institut-agro-dijon.webp
+          grep -q 'assets/logos/institut-agro-dijon.webp' index.html
+          grep -q 'L’Institut Agro Dijon' index.html
+          grep -q 'Universite-Gustave-Eiffel/NoisePlanet' index.html
+          ! grep -q 'logo__agrosup_dijon_complet.jpg' index.html
+          ! grep -q 'Special:Redirect/file/Cnrs-logo.svg' index.html
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm assets/logos/institut-agro-dijon.webp.b64 .github/scripts/replace_cover_logos.py .github/workflows/replace-cover-logos.yml
+          git add index.html assets/logos/institut-agro-dijon.webp
+          git commit -m "Use correct Institut Agro Dijon and CNRS logos"
+          git push
