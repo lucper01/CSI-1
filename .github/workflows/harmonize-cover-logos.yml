@@ -1,0 +1,34 @@
+name: Harmonize cover logos
+on:
+  push:
+    paths:
+      - '.github/workflows/harmonize-cover-logos.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Harmonize cover logos
+        run: python3 .github/scripts/harmonize_cover_logos.py
+      - name: Validate
+        run: |
+          test -s assets/logos/cnrs-logo.png
+          test "$(stat -c%s assets/logos/cnrs-logo.png)" = "12036"
+          grep -q 'assets/logos/cnrs-logo.png' index.html
+          grep -q 'cover-logo-harmonization-v3' index.html
+          grep -q 'assets/logos/institut-agro-dijon.webp' index.html
+          ! grep -q 'Universite-Gustave-Eiffel/NoisePlanet' index.html
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm assets/logos/cnrs-logo.png.b64.part1 assets/logos/cnrs-logo.png.b64.part2 assets/logos/cnrs-logo.png.b64.part3 assets/logos/cnrs-logo.png.b64.part4 assets/logos/cnrs-logo.png.b64.part5
+          git rm -f assets/logos/institut-agro-dijon-cropped.webp.b64 || true
+          git rm .github/scripts/harmonize_cover_logos.py .github/workflows/harmonize-cover-logos.yml
+          git add index.html assets/logos/cnrs-logo.png
+          git commit -m "Harmonize cover logo sizing and use supplied CNRS mark"
+          git push
