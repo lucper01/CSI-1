@@ -1,0 +1,72 @@
+name: Duplicate axes slide after slide 2
+on:
+  push:
+    paths:
+      - '.github/workflows/duplicate-axes-after-slide2.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Duplicate axes slide without study names
+        shell: python
+        run: |
+          from pathlib import Path
+          import copy, json, re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          def title(s):
+              return s.get('title') or s.get('_fr', {}).get('title', '')
+
+          src_idx = next(i for i, s in enumerate(slides) if title(s) == 'Deux axes')
+          assert src_idx >= 3, f'Unexpected source position: {src_idx+1}'
+          duplicate = copy.deepcopy(slides[src_idx])
+
+          def strip_study_names(holder):
+              if not isinstance(holder, dict):
+                  return
+              content = holder.get('content', '')
+              if not content:
+                  return
+              content = re.sub(r'<div class="v16-pills">.*?</div>', '', content, flags=re.S)
+              holder['content'] = content
+
+          strip_study_names(duplicate)
+          strip_study_names(duplicate.get('_fr', {}))
+          strip_study_names(duplicate.get('_en', {}))
+          duplicate['content'] = duplicate.get('_fr', duplicate).get('content', duplicate.get('content', ''))
+
+          # Insert immediately after slide 2. The original source slide remains untouched later in the deck.
+          slides.insert(2, duplicate)
+
+          assert title(slides[2]) == 'Deux axes'
+          dup_blob = slides[2].get('content','') + slides[2].get('_fr',{}).get('content','') + slides[2].get('_en',{}).get('content','')
+          assert 'v16-pills' not in dup_blob
+          src_now = next(i for i, s in enumerate(slides[3:], start=3) if title(s) == 'Deux axes')
+          src_blob = slides[src_now].get('content','') + slides[src_now].get('_fr',{}).get('content','') + slides[src_now].get('_en',{}).get('content','')
+          assert 'v16-pills' in src_blob
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          text = text[:start] + new_json + text[end:]
+          p.write_text(text, encoding='utf-8')
+          print(f'OK - duplicated axes slide at slide 3; original now at slide {src_now+1}')
+      - name: Validate backup untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/duplicate-axes-after-slide2.yml
+          git add -A index.html .github
+          git commit -m "Duplicate axes slide after slide 2 without study names"
+          git push
