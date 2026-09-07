@@ -1,0 +1,27 @@
+name: Replace Axis 2 reference
+on:
+  push:
+    paths:
+      - '.github/workflows/run-replace-axis2-reference.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Replace reference
+        run: python3 tools_temp/replace_axis2_reference.py
+      - name: Validate backup untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f tools_temp/replace_axis2_reference.py
+          rm -f .github/workflows/run-replace-axis2-reference.yml
+          git add -A index.html tools_temp .github
+          git commit -m "Replace Axis 2 reference with spatial olfaction study"
+          git push
