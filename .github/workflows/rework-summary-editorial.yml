@@ -1,0 +1,71 @@
+name: Rework summary editorial
+on:
+  push:
+    paths:
+      - '.github/workflows/rework-summary-editorial.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rework summary slide
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, hashlib
+
+          def parse(path):
+              text = Path(path).read_text(encoding='utf-8')
+              marker = 'const slides = '
+              start = text.index(marker) + len(marker)
+              slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+              return text, start, start + rel_end, slides
+
+          before_save = hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest()
+          text, start, end, slides = parse('index.html')
+
+          summary = next(s for s in slides if (s.get('title') or s.get('_fr',{}).get('title')) == 'Sommaire')
+
+          fr = '''<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:52px;row-gap:0;margin-top:10px">
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">01</div><div><h3 style="margin:0 0 4px">Contexte théorique</h3><p style="margin:0;color:var(--muted)">Espace, temps et spécificité de l’olfaction.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">02</div><div><h3 style="margin:0 0 4px">Architecture de la thèse</h3><p style="margin:0;color:var(--muted)">Deux axes et un programme expérimental.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">03</div><div><h3 style="margin:0 0 4px">Première année</h3><p style="margin:0;color:var(--muted)">Études réalisées, résultats et développement méthodologique.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">04</div><div><h3 style="margin:0 0 4px">Deuxième année</h3><p style="margin:0;color:var(--muted)">Priorités expérimentales et prochaines collectes.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">05</div><div><h3 style="margin:0 0 4px">Compléments</h3><p style="margin:0;color:var(--muted)">Extensions envisagées selon les résultats et la faisabilité.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">06</div><div><h3 style="margin:0 0 4px">Rétroplanning global</h3><p style="margin:0;color:var(--muted)">Calendrier, valorisation et progression jusqu’en 2028.</p></div></div>
+          </div>'''
+
+          en = '''<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:52px;row-gap:0;margin-top:10px">
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">01</div><div><h3 style="margin:0 0 4px">Theoretical context</h3><p style="margin:0;color:var(--muted)">Space, time and the specificity of olfaction.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">02</div><div><h3 style="margin:0 0 4px">Thesis architecture</h3><p style="margin:0;color:var(--muted)">Two axes and an experimental programme.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">03</div><div><h3 style="margin:0 0 4px">Year 1</h3><p style="margin:0;color:var(--muted)">Completed studies, results and methodological development.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">04</div><div><h3 style="margin:0 0 4px">Year 2</h3><p style="margin:0;color:var(--muted)">Experimental priorities and upcoming data collections.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">05</div><div><h3 style="margin:0 0 4px">Extensions</h3><p style="margin:0;color:var(--muted)">Additional studies depending on results and feasibility.</p></div></div>
+          <div style="display:grid;grid-template-columns:88px 1fr;gap:18px;align-items:center;padding:18px 0 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div style="font-size:2.55rem;font-weight:950;line-height:1;color:var(--accent)">06</div><div><h3 style="margin:0 0 4px">Global timeline</h3><p style="margin:0;color:var(--muted)">Schedule, dissemination and progress through 2028.</p></div></div>
+          </div>'''
+
+          summary['lead'] = 'Six parties, de la question théorique à la planification globale de la thèse.'
+          summary['content'] = fr
+          summary.setdefault('_fr', {})['lead'] = summary['lead']
+          summary['_fr']['content'] = fr
+          summary.setdefault('_en', {})['lead'] = 'Six parts, from the theoretical question to the overall PhD plan.'
+          summary['_en']['content'] = en
+
+          new_text = text[:start] + json.dumps(slides, ensure_ascii=False, separators=(',',':')) + text[end:]
+          Path('index.html').write_text(new_text, encoding='utf-8')
+
+          after_save = hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest()
+          assert before_save == after_save, 'index_save.html changed unexpectedly'
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          rm .github/workflows/rework-summary-editorial.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/rework-summary-editorial.yml
+          git commit -m "Rework summary with editorial layout"
+          git push
