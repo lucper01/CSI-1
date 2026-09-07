@@ -29,6 +29,6 @@ jobs:
           rm -f assets/logos/cnrs-logo.png.b64.part1 assets/logos/cnrs-logo.png.b64.part2 assets/logos/cnrs-logo.png.b64.part3 assets/logos/cnrs-logo.png.b64.part4 assets/logos/cnrs-logo.png.b64.part5
           rm -f assets/logos/institut-agro-dijon-cropped.webp.b64
           git rm -f .github/scripts/harmonize_cover_logos.py .github/workflows/harmonize-cover-logos.yml
-          git add -A index.html assets/logos .github
+          git add -A
           git commit -m "Harmonize cover logo sizing"
           git push
