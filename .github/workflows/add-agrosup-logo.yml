@@ -1,0 +1,44 @@
+name: Add AgroSup logo
+on:
+  push:
+    paths:
+      - '.github/workflows/add-agrosup-logo.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add AgroSup Dijon logo to cover
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('index.html')
+          save=Path('index_save.html')
+          before=hashlib.sha256(save.read_bytes()).hexdigest()
+          h=p.read_text(encoding='utf-8')
+          needle=r'alt=\"CSGA\">'
+          logo=r'<img src=\"https://dijon.uniagro.fr/images/upload/agrosup_dijon_alumni/ecole_asd/logo__agrosup_dijon_complet.jpg\" alt=\"AgroSup Dijon\">'
+          count=h.count(needle)
+          if count != 3:
+              raise SystemExit(f'Expected 3 CSGA cover logo anchors, found {count}')
+          h=h.replace(needle, needle+logo)
+          p.write_text(h,encoding='utf-8')
+          if hashlib.sha256(save.read_bytes()).hexdigest()!=before:
+              raise SystemExit('index_save.html changed unexpectedly')
+          if h.count('alt=\\\"AgroSup Dijon\\\"') != 3:
+              raise SystemExit('AgroSup logo insertion count invalid')
+          print('AgroSup logo added to FR, EN and active cover content')
+          PY
+      - name: Commit working index only
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/add-agrosup-logo.yml
+          git add index.html
+          git commit -m "Add AgroSup Dijon logo to cover"
+          git push
