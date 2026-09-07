@@ -1,0 +1,146 @@
+name: Rework theory introduction v2
+on:
+  push:
+    paths:
+      - '.github/workflows/rework-theory-intro-v2.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reorder and lighten theory sequence
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          def title(s):
+              return s.get('title') or s.get('_fr', {}).get('title', '')
+
+          old_theory_titles = {
+              'La multisensorialité est organisée par l’espace et le temps',
+              'Le temps multisensoriel n’est pas un point de synchronie',
+              'L’espace multisensoriel repose sur l’attribution d’une source',
+              'Le sniff transforme le temps olfactif',
+              'De l’asymétrie sensorielle à deux questions expérimentales',
+              'Axe 1 - Le temps : intégrer des signaux aux dynamiques différentes',
+              'Axe 1 - L’espace : que signifie « localiser » une odeur ?',
+              'Axe 2 - Vision : une odeur peut modifier ce qui devient perceptuellement saillant',
+              'Axe 2 - Audition : un terrain encore moins caractérisé',
+          }
+          sela_title = '« No space, no time? » - le paradoxe de l’attention olfactive'
+
+          sela_idx = next(i for i,s in enumerate(slides) if title(s) == sela_title)
+          axis_indices = [i for i,s in enumerate(slides) if title(s) == 'Deux axes']
+          assert axis_indices, 'No axes slide found'
+          intro_axis_idx = axis_indices[0]
+          sela = slides[sela_idx]
+          axis = slides[intro_axis_idx]
+
+          current_titles = [title(s) for s in slides]
+          missing = [t for t in old_theory_titles if t not in current_titles]
+          assert not missing, f'Missing theory slides: {missing}'
+
+          remove_indices = {sela_idx, intro_axis_idx}
+          remove_indices.update(i for i,s in enumerate(slides) if title(s) in old_theory_titles)
+          base = [s for i,s in enumerate(slides) if i not in remove_indices]
+
+          def mk(fr_title, fr_lead, fr_content, en_title, en_lead, en_content, kicker='Cadre théorique', section='Cadre théorique'):
+              fr = {'section':section,'kicker':kicker,'title':fr_title,'lead':fr_lead,'content':fr_content,'notes':''}
+              en = {'section':'Theoretical framework','kicker':'Theoretical framework','title':en_title,'lead':en_lead,'content':en_content,'notes':''}
+              return {'chapter':'Cadre théorique','study':'','appendix':False,'_fr':fr,'_en':en,**fr}
+
+          pre = [
+              mk(
+                  'Vision et audition - deux modalités de référence',
+                  'Avant l’olfaction, l’espace et le temps sont déjà des dimensions centrales et quantifiables de la perception visuelle et auditive.',
+                  '<div class="grid two"><div class="card" style="min-height:250px;display:grid;align-content:center;text-align:center"><div class="mono">VISION</div><h3 style="font-size:2.2rem;margin:.5rem 0">OÙ ? &nbsp; QUAND ?</h3><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"><span class="pill-btn">position</span><span class="pill-btn">mouvement</span><span class="pill-btn">durée</span><span class="pill-btn">onset / offset</span></div></div><div class="card dark" style="min-height:250px;display:grid;align-content:center;text-align:center"><div class="mono">AUDITION</div><h3 style="font-size:2.2rem;margin:.5rem 0">OÙ ? &nbsp; QUAND ?</h3><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"><span class="pill-btn">azimut</span><span class="pill-btn">distance</span><span class="pill-btn">ordre</span><span class="pill-btn">synchronie</span></div></div></div><div class="csi-cite">Middlebrooks, J. C., & Green, D. M. (1991). Annual Review of Psychology, 42, 135-159. Vroomen, J., & Keetels, M. (2010). Attention, Perception, & Psychophysics, 72, 871-884.</div>',
+                  'Vision and audition - two reference modalities',
+                  'Before considering olfaction, space and time are already central and measurable dimensions of visual and auditory perception.',
+                  '<div class="grid two"><div class="card" style="min-height:250px;display:grid;align-content:center;text-align:center"><div class="mono">VISION</div><h3 style="font-size:2.2rem;margin:.5rem 0">WHERE? &nbsp; WHEN?</h3><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"><span class="pill-btn">position</span><span class="pill-btn">motion</span><span class="pill-btn">duration</span><span class="pill-btn">onset / offset</span></div></div><div class="card dark" style="min-height:250px;display:grid;align-content:center;text-align:center"><div class="mono">AUDITION</div><h3 style="font-size:2.2rem;margin:.5rem 0">WHERE? &nbsp; WHEN?</h3><div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"><span class="pill-btn">azimuth</span><span class="pill-btn">distance</span><span class="pill-btn">order</span><span class="pill-btn">synchrony</span></div></div></div><div class="csi-cite">Middlebrooks & Green (1991); Vroomen & Keetels (2010).</div>'
+              ),
+              mk(
+                  'Le temps - des événements que l’on sait mesurer',
+                  '',
+                  '<div class="card" style="padding:34px 38px"><div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:18px;text-align:center"><div><div class="mono">DÉBUT</div><h3>ONSET</h3></div><div style="font-size:2rem">→</div><div><div class="mono">INTERVALLE</div><h3>DURÉE</h3></div><div style="font-size:2rem">→</div><div><div class="mono">FIN</div><h3>OFFSET</h3></div></div></div><div class="grid three" style="margin-top:16px"><div class="card"><div class="mono">Deux événements</div><h3>Ordre temporel</h3></div><div class="card"><div class="mono">Deux modalités</div><h3>Simultanéité</h3></div><div class="card dark"><div class="mono">Tolérance</div><h3>Temporal Binding Window</h3></div></div><div class="csi-cite">Vroomen, J., & Keetels, M. (2010). Perception of intersensory synchrony: a tutorial review. Attention, Perception, & Psychophysics, 72, 871-884.</div>',
+                  'Time - events we know how to measure',
+                  '',
+                  '<div class="card" style="padding:34px 38px"><div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:18px;text-align:center"><div><div class="mono">START</div><h3>ONSET</h3></div><div style="font-size:2rem">→</div><div><div class="mono">INTERVAL</div><h3>DURATION</h3></div><div style="font-size:2rem">→</div><div><div class="mono">END</div><h3>OFFSET</h3></div></div></div><div class="grid three" style="margin-top:16px"><div class="card"><div class="mono">Two events</div><h3>Temporal order</h3></div><div class="card"><div class="mono">Two modalities</div><h3>Simultaneity</h3></div><div class="card dark"><div class="mono">Tolerance</div><h3>Temporal Binding Window</h3></div></div><div class="csi-cite">Vroomen & Keetels (2010).</div>'
+              ),
+              mk(
+                  'L’espace - des sources que l’on sait localiser',
+                  '',
+                  '<div class="grid two"><div class="card" style="text-align:center;min-height:260px"><div class="mono">VISION</div><div style="font-size:4rem;line-height:1;margin:22px 0">← &nbsp; ● &nbsp; →</div><h3>Position explicite dans la scène</h3><p style="font-size:.95rem">coordonnées - profondeur - mouvement</p></div><div class="card dark" style="text-align:center;min-height:260px"><div class="mono">AUDITION</div><div style="font-size:4rem;line-height:1;margin:22px 0">◖ &nbsp; ● &nbsp; ◗</div><h3>Localisation de la source</h3><p style="font-size:.95rem">indices binauraux - azimut - élévation</p></div></div><div class="csi-cite">Middlebrooks, J. C., & Green, D. M. (1991). Annual Review of Psychology, 42, 135-159. Stein, B. E., & Stanford, T. R. (2008). Nature Reviews Neuroscience, 9, 255-266.</div>',
+                  'Space - sources we know how to localize',
+                  '',
+                  '<div class="grid two"><div class="card" style="text-align:center;min-height:260px"><div class="mono">VISION</div><div style="font-size:4rem;line-height:1;margin:22px 0">← &nbsp; ● &nbsp; →</div><h3>Explicit position in the scene</h3><p style="font-size:.95rem">coordinates - depth - motion</p></div><div class="card dark" style="text-align:center;min-height:260px"><div class="mono">AUDITION</div><div style="font-size:4rem;line-height:1;margin:22px 0">◖ &nbsp; ● &nbsp; ◗</div><h3>Source localization</h3><p style="font-size:.95rem">binaural cues - azimuth - elevation</p></div></div><div class="csi-cite">Middlebrooks & Green (1991); Stein & Stanford (2008).</div>'
+              ),
+              mk(
+                  'Espace + temps - attribuer les signaux au même événement',
+                  '',
+                  '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center"><div class="card" style="text-align:center"><div class="mono">SIGNAL VISUEL</div><h3>où + quand</h3></div><div style="text-align:center"><div style="font-size:2.8rem">⇄</div><strong>CAUSE COMMUNE ?</strong><div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><span class="pill-btn">proximité spatiale</span><span class="pill-btn">proximité temporelle</span></div></div><div class="card dark" style="text-align:center"><div class="mono">SIGNAL AUDITIF</div><h3>où + quand</h3></div></div><div class="callout" style="margin-top:20px;text-align:center"><strong>Vision + audition :</strong> un cadre expérimental très bien documenté pour tester l’intégration multisensorielle.</div><div class="csi-cite">Stein, B. E., & Stanford, T. R. (2008). Nature Reviews Neuroscience, 9, 255-266. Körding, K. P., et al. (2007). PLoS ONE, 2, e943.</div>',
+                  'Space + time - assigning signals to the same event',
+                  '',
+                  '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center"><div class="card" style="text-align:center"><div class="mono">VISUAL SIGNAL</div><h3>where + when</h3></div><div style="text-align:center"><div style="font-size:2.8rem">⇄</div><strong>COMMON CAUSE?</strong><div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><span class="pill-btn">spatial proximity</span><span class="pill-btn">temporal proximity</span></div></div><div class="card dark" style="text-align:center"><div class="mono">AUDITORY SIGNAL</div><h3>where + when</h3></div></div><div class="callout" style="margin-top:20px;text-align:center"><strong>Vision + audition:</strong> a well-documented experimental framework for multisensory integration.</div><div class="csi-cite">Stein & Stanford (2008); Körding et al. (2007).</div>'
+              ),
+          ]
+
+          fr_sela = {
+              'section':'Introduction générale','kicker':'Le contraste olfactif','title':sela_title,
+              'lead':'Et si les repères qui structurent vision et audition n’étaient pas disponibles de la même manière en olfaction ?',
+              'content':'<div class="grid three"><div class="card" style="text-align:center;min-height:220px"><div class="mono">ESPACE</div><h3 style="font-size:1.8rem">Localisation limitée</h3><div style="font-size:2.8rem;margin-top:20px">?</div></div><div class="card" style="text-align:center;min-height:220px"><div class="mono">TEMPS</div><h3 style="font-size:1.8rem">Échantillonnage par le sniff</h3><div style="font-size:2.8rem;margin-top:20px">?</div></div><div class="card dark" style="text-align:center;min-height:220px"><div class="mono">ATTENTION</div><h3 style="font-size:1.8rem">Une organisation atypique</h3><div style="font-size:2.8rem;margin-top:20px">?</div></div></div><div class="callout" style="margin-top:18px;text-align:center"><strong>« No space, no time? »</strong> - une question de travail, pas l’affirmation d’une absence de représentations spatiales ou temporelles.</div><div class="csi-cite">Sela, L., & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div>',
+              'notes':'Présenter le contraste avec la vision et l’audition, puis faire émerger les deux axes.'}
+          en_sela = {
+              'section':'General introduction','kicker':'The olfactory contrast','title':'“No space, no time?” - the paradox of olfactory attention',
+              'lead':'What if the cues that structure vision and audition were not available in the same way in olfaction?',
+              'content':'<div class="grid three"><div class="card" style="text-align:center;min-height:220px"><div class="mono">SPACE</div><h3 style="font-size:1.8rem">Limited localization</h3><div style="font-size:2.8rem;margin-top:20px">?</div></div><div class="card" style="text-align:center;min-height:220px"><div class="mono">TIME</div><h3 style="font-size:1.8rem">Sampling by sniffing</h3><div style="font-size:2.8rem;margin-top:20px">?</div></div><div class="card dark" style="text-align:center;min-height:220px"><div class="mono">ATTENTION</div><h3 style="font-size:1.8rem">An atypical organization</h3><div style="font-size:2.8rem;margin-top:20px">?</div></div></div><div class="callout" style="margin-top:18px;text-align:center"><strong>“No space, no time?”</strong> - a working question, not a claim that spatial or temporal representations are absent.</div><div class="csi-cite">Sela, L., & Sobel, N. (2010). Experimental Brain Research, 205, 13-29.</div>',
+              'notes':'Introduce the contrast with vision and audition, then derive the two axes.'}
+          sela['_fr'] = fr_sela
+          sela['_en'] = en_sela
+          sela.update(fr_sela)
+
+          post = [
+              mk('Axe 1 - Temps','Même question, trois dynamiques sensorielles.','<div style="display:grid;gap:14px"><div class="card" style="display:grid;grid-template-columns:150px 1fr;align-items:center"><strong>VISION</strong><div style="height:12px;border-radius:99px;background:linear-gradient(90deg,var(--accent) 0 72%,transparent 72%);border:1px solid var(--line)"></div></div><div class="card" style="display:grid;grid-template-columns:150px 1fr;align-items:center"><strong>AUDITION</strong><div style="height:12px;border-radius:99px;background:linear-gradient(90deg,var(--accent) 0 72%,transparent 72%);border:1px solid var(--line)"></div></div><div class="card dark" style="display:grid;grid-template-columns:150px 1fr;align-items:center"><strong>OLFACTION</strong><div style="display:flex;gap:12px"><span style="height:12px;flex:1;border-radius:99px;background:var(--accent)"></span><span style="height:12px;flex:.35;border-radius:99px;border:1px dashed currentColor"></span><span style="height:12px;flex:1;border-radius:99px;background:var(--accent)"></span></div></div></div><div class="callout" style="margin-top:18px;text-align:center"><strong>Question :</strong> que deviennent onset, offset, durée et synchronie lorsque le signal olfactif dépend du cycle respiratoire ?</div><div class="csi-cite">Vroomen & Keetels (2010); Kepecs, Uchida, & Mainen (2006); Sela & Sobel (2010).</div>','Axis 1 - Time','Same question, three sensory dynamics.','<div style="display:grid;gap:14px"><div class="card" style="display:grid;grid-template-columns:150px 1fr;align-items:center"><strong>VISION</strong><div style="height:12px;border-radius:99px;background:linear-gradient(90deg,var(--accent) 0 72%,transparent 72%);border:1px solid var(--line)"></div></div><div class="card" style="display:grid;grid-template-columns:150px 1fr;align-items:center"><strong>AUDITION</strong><div style="height:12px;border-radius:99px;background:linear-gradient(90deg,var(--accent) 0 72%,transparent 72%);border:1px solid var(--line)"></div></div><div class="card dark" style="display:grid;grid-template-columns:150px 1fr;align-items:center"><strong>OLFACTION</strong><div style="display:flex;gap:12px"><span style="height:12px;flex:1;border-radius:99px;background:var(--accent)"></span><span style="height:12px;flex:.35;border-radius:99px;border:1px dashed currentColor"></span><span style="height:12px;flex:1;border-radius:99px;background:var(--accent)"></span></div></div></div><div class="callout" style="margin-top:18px;text-align:center"><strong>Question:</strong> what happens to onset, offset, duration and synchrony when olfactory input depends on the respiratory cycle?</div><div class="csi-cite">Vroomen & Keetels (2010); Kepecs, Uchida, & Mainen (2006); Sela & Sobel (2010).</div>',kicker='Axe 1 - cadre théorique',section='Axe 1 - cadre théorique'),
+              mk('Axe 1 - Espace','Même monde, mais pas la même précision spatiale.','<div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:center;text-align:center"><div class="card"><div class="mono">VISION</div><h3>source explicite</h3></div><div style="font-size:2rem">↔</div><div class="card"><div class="mono">AUDITION</div><h3>source localisable</h3></div><div style="font-size:2rem">↔</div><div class="card dark"><div class="mono">OLFACTION</div><h3>source à reconstruire ?</h3></div></div><div class="callout" style="margin-top:18px;text-align:center"><strong>Question :</strong> l’espace olfactif est-il propre à l’odeur, hérité d’une autre modalité ou construit conjointement ?</div><div class="csi-cite">Porter, J., et al. (2007). Nature Neuroscience, 10, 27-29. Sela & Sobel (2010). Experimental Brain Research, 205, 13-29.</div>','Axis 1 - Space','Same world, but not the same spatial precision.','<div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:center;text-align:center"><div class="card"><div class="mono">VISION</div><h3>explicit source</h3></div><div style="font-size:2rem">↔</div><div class="card"><div class="mono">AUDITION</div><h3>localizable source</h3></div><div style="font-size:2rem">↔</div><div class="card dark"><div class="mono">OLFACTION</div><h3>source to reconstruct?</h3></div></div><div class="callout" style="margin-top:18px;text-align:center"><strong>Question:</strong> is olfactory space intrinsic to odor, inherited from another modality, or jointly constructed?</div><div class="csi-cite">Porter et al. (2007); Sela & Sobel (2010).</div>',kicker='Axe 1 - cadre théorique',section='Axe 1 - cadre théorique'),
+              mk('Axe 2 - Odeur → Vision','Ici, l’odeur n’est plus seulement un signal à intégrer : elle devient un contexte qui peut transformer la vision.','<div style="display:grid;grid-template-columns:.8fr auto 1.5fr;gap:24px;align-items:center"><div class="card dark" style="text-align:center"><div class="mono">ODEUR</div><h3>contexte</h3></div><div style="font-size:3rem">→</div><div class="grid three"><div class="card" style="text-align:center"><div class="mono">PERCEPTION</div><h3>dominance</h3></div><div class="card" style="text-align:center"><div class="mono">ATTENTION</div><h3>saillance</h3></div><div class="card" style="text-align:center"><div class="mono">SCÈNE</div><h3>mémoire spatiale</h3></div></div></div><div class="csi-cite">Zhou, W., et al. (2010). Current Biology, 20, 1356-1358. Seo, H.-S., et al. (2010). Appetite, 54, 544-549. Intraub & Richardson (1989); Bainbridge & Baker (2020).</div>','Axis 2 - Odor → Vision','Here, odor is no longer only a signal to integrate: it becomes a context that can transform vision.','<div style="display:grid;grid-template-columns:.8fr auto 1.5fr;gap:24px;align-items:center"><div class="card dark" style="text-align:center"><div class="mono">ODOR</div><h3>context</h3></div><div style="font-size:3rem">→</div><div class="grid three"><div class="card" style="text-align:center"><div class="mono">PERCEPTION</div><h3>dominance</h3></div><div class="card" style="text-align:center"><div class="mono">ATTENTION</div><h3>salience</h3></div><div class="card" style="text-align:center"><div class="mono">SCENE</div><h3>spatial memory</h3></div></div></div><div class="csi-cite">Zhou et al. (2010); Seo et al. (2010); Intraub & Richardson (1989); Bainbridge & Baker (2020).</div>',kicker='Axe 2 - cadre théorique',section='Axe 2 - cadre théorique'),
+              mk('Axe 2 - Odeur → Audition','Des liens existent. Leur effet sur le temps et l’espace auditifs reste largement ouvert.','<div class="grid two"><div class="card"><div class="mono">ÉTABLI</div><h3>Correspondances et intégration</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><span class="pill-btn">hauteur</span><span class="pill-btn">timbre</span><span class="pill-btn">couplage neural</span></div></div><div class="card dark"><div class="mono">QUESTION OUVERTE</div><h3>Temps et espace auditifs</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><span class="pill-btn">durée ?</span><span class="pill-btn">onset / offset ?</span><span class="pill-btn">position ?</span></div></div></div><div class="csi-cite">Crisinel, A.-S., & Spence, C. (2012). Chemical Senses, 37, 151-158. Zhou, G., et al. (2019). Nature Communications, 10, 1168.</div>','Axis 2 - Odor → Audition','Links exist. Their effect on auditory time and space remains largely open.','<div class="grid two"><div class="card"><div class="mono">ESTABLISHED</div><h3>Correspondences and integration</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><span class="pill-btn">pitch</span><span class="pill-btn">timbre</span><span class="pill-btn">neural coupling</span></div></div><div class="card dark"><div class="mono">OPEN QUESTION</div><h3>Auditory time and space</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><span class="pill-btn">duration?</span><span class="pill-btn">onset / offset?</span><span class="pill-btn">location?</span></div></div></div><div class="csi-cite">Crisinel & Spence (2012); Zhou et al. (2019).</div>',kicker='Axe 2 - cadre théorique',section='Axe 2 - cadre théorique'),
+          ]
+
+          sequence = pre + [sela, axis] + post
+          base[1:1] = sequence
+
+          new_json = json.dumps(base, ensure_ascii=False, separators=(',', ':'))
+          text = text[:start] + new_json + text[end:]
+          css = '''\n/* compact-theory-sequence-v2 */\n.slide-content .pill-btn{display:inline-flex!important;width:auto!important;height:auto!important;min-height:0!important;padding:7px 11px!important;border-radius:999px!important;font-size:.76rem!important;font-weight:850!important;pointer-events:none!important}\n/* /compact-theory-sequence-v2 */\n'''
+          if '/* compact-theory-sequence-v2 */' not in text:
+              text = text.replace('</style>', css + '\n</style>', 1)
+          p.write_text(text, encoding='utf-8')
+
+          out = p.read_text(encoding='utf-8')
+          s0 = out.index(marker) + len(marker)
+          check, _ = json.JSONDecoder().raw_decode(out[s0:])
+          titles = [title(s) for s in check]
+          expected = ['Vision et audition - deux modalités de référence','Le temps - des événements que l’on sait mesurer','L’espace - des sources que l’on sait localiser','Espace + temps - attribuer les signaux au même événement',sela_title,'Deux axes','Axe 1 - Temps','Axe 1 - Espace','Axe 2 - Odeur → Vision','Axe 2 - Odeur → Audition']
+          assert titles[1:11] == expected, titles[1:11]
+          print('OK - theory sequence reordered and lightened')
+      - name: Validate saved checkpoint untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/rework-theory-intro.yml .github/workflows/rework-theory-intro-v2.yml
+          git add -A index.html .github
+          git commit -m "Reframe theory from vision-audition to olfactory contrast"
+          git push
