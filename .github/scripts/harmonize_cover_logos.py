@@ -1,24 +1,20 @@
 from pathlib import Path
-import base64
+import re
 
 root = Path('.')
-parts = [root / f'assets/logos/cnrs-logo.png.b64.part{i}' for i in range(1, 6)]
-payload = ''.join(p.read_text(encoding='utf-8').strip() for p in parts)
-cnrs = base64.b64decode(payload, validate=True)
-assert len(cnrs) == 12036, f'Unexpected CNRS PNG size: {len(cnrs)}'
-assert cnrs[:8] == b'\x89PNG\r\n\x1a\n'
-(root / 'assets/logos/cnrs-logo.png').write_bytes(cnrs)
-
 path = root / 'index.html'
 text = path.read_text(encoding='utf-8')
+
+# Use the exact CNRS logo supplied by the user and already stored locally.
 old_cnrs = 'https://raw.githubusercontent.com/Universite-Gustave-Eiffel/NoisePlanet/d0864656c42f5aa14dec5c26bd61258c8d1129e8/assets/img/contact/cnrs.svg'
 text = text.replace(old_cnrs, 'assets/logos/cnrs-logo.png')
 
-style_id = 'cover-logo-harmonization-v3'
-if style_id not in text:
-    css = r'''
-<style id="cover-logo-harmonization-v3">
-  /* Cover - equal visual footprint for all institutional logos */
+# Remove any previous temporary harmonization block before inserting the final one.
+text = re.sub(r'\n?<style id="cover-logo-harmonization-v[0-9]+">.*?</style>\n?', '\n', text, flags=re.S)
+
+css = r'''
+<style id="cover-logo-harmonization-v4">
+  /* Cover - consistent cards and balanced visual size for institutional logos */
   .hero-slide .v16-logo-cloud {
     display:flex!important;
     align-items:center!important;
@@ -28,47 +24,53 @@ if style_id not in text:
   }
   .hero-slide .v16-logo-cloud img {
     display:block!important;
-    width:108px!important;
-    height:58px!important;
-    min-width:108px!important;
-    max-width:108px!important;
-    min-height:58px!important;
-    max-height:58px!important;
-    flex:0 0 108px!important;
+    width:116px!important;
+    height:62px!important;
+    min-width:116px!important;
+    max-width:116px!important;
+    min-height:62px!important;
+    max-height:62px!important;
+    flex:0 0 116px!important;
     box-sizing:border-box!important;
-    padding:7px 9px!important;
+    padding:7px 10px!important;
     border-radius:14px!important;
     background:#fff!important;
     object-fit:contain!important;
     object-position:center!important;
     box-shadow:none!important;
   }
+  /* The supplied CNRS PNG contains transparent margins: crop only those margins. */
   .hero-slide .v16-logo-cloud img[alt="CNRS"] {
-    padding:8px 24px!important;
-    object-fit:contain!important;
+    padding:6px 20px!important;
+    object-fit:cover!important;
+    object-position:center!important;
   }
+  /* The Institut Agro source is square although the visible wordmark is horizontal. */
   .hero-slide .v16-logo-cloud img[alt="L’Institut Agro Dijon"] {
+    padding:6px 8px!important;
     object-fit:cover!important;
     object-position:center 51%!important;
-    padding:7px 9px!important;
   }
   @media (max-width:900px) {
     .hero-slide .v16-logo-cloud img {
-      width:96px!important;
-      height:52px!important;
-      min-width:96px!important;
-      max-width:96px!important;
-      min-height:52px!important;
-      max-height:52px!important;
-      flex-basis:96px!important;
+      width:102px!important;
+      height:56px!important;
+      min-width:102px!important;
+      max-width:102px!important;
+      min-height:56px!important;
+      max-height:56px!important;
+      flex-basis:102px!important;
+      padding:6px 8px!important;
     }
-    .hero-slide .v16-logo-cloud img[alt="CNRS"] { padding:7px 22px!important; }
+    .hero-slide .v16-logo-cloud img[alt="CNRS"] { padding:5px 18px!important; }
+    .hero-slide .v16-logo-cloud img[alt="L’Institut Agro Dijon"] { padding:5px 7px!important; }
   }
 </style>
 '''
-    text = text.replace('</head>', css + '\n</head>', 1)
+text = text.replace('</head>', css + '\n</head>', 1)
 
 assert text.count('assets/logos/cnrs-logo.png') >= 3
-assert 'cover-logo-harmonization-v3' in text
+assert 'cover-logo-harmonization-v4' in text
 assert 'assets/logos/institut-agro-dijon.webp' in text
+assert old_cnrs not in text
 path.write_text(text, encoding='utf-8')
