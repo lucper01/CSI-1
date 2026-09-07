@@ -54,12 +54,12 @@ for study,intro_title,method_title,demo_id in pairs:
     move_one(src,dst,'content',demo_id)
     if '_fr' in src and '_fr' in dst:
         move_one(src['_fr'],dst['_fr'],'content',demo_id)
-    if '_en' in src and '_en' in dst:
-        moved=move_one(src['_en'],dst['_en'],'content',demo_id)
-        if moved is None:
-            insert_button(dst['_en'],'content',demo_id,english_buttons[demo_id])
+    if '_en' in dst:
+        if '_en' in src:
+            move_one(src['_en'],dst['_en'],'content',demo_id)
+        insert_button(dst['_en'],'content',demo_id,english_buttons[demo_id])
 
-# Refresh the VIBEX launch wording now that the supplied stimuli are integrated.
+# Refresh VIBEX launch wording now that the supplied stimuli are integrated.
 for s in slides:
     if title(s)=='VIBEX - Méthode':
         for holder in [s,s.get('_fr',{})]:
