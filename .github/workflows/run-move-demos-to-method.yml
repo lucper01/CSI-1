@@ -29,4 +29,4 @@ jobs:
           git add -A index.html tools_temp .github
           git commit -m "Move TWIXAV and VIBEX demos to method slides"
           git push
-# rerun after updater fix
+# multilingual rerun
