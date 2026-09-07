@@ -15,11 +15,13 @@ jobs:
       - name: Replace logos
         run: |
           mkdir -p assets/logos
-          base64 -d assets/logos/institut-agro-dijon.webp.b64 > assets/logos/institut-agro-dijon.webp
+          cat assets/logos/agro.part1 assets/logos/agro.part2 assets/logos/agro.part3 assets/logos/agro.part4 assets/logos/agro.part5 > /tmp/agro.b64
+          base64 -d /tmp/agro.b64 > assets/logos/institut-agro-dijon.webp
           python3 .github/scripts/replace_cover_logos.py
       - name: Validate
         run: |
           test -s assets/logos/institut-agro-dijon.webp
+          test "$(stat -c%s assets/logos/institut-agro-dijon.webp)" -eq 4628
           grep -q 'assets/logos/institut-agro-dijon.webp' index.html
           grep -q 'L’Institut Agro Dijon' index.html
           grep -q 'Universite-Gustave-Eiffel/NoisePlanet' index.html
@@ -29,7 +31,7 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git rm assets/logos/institut-agro-dijon.webp.b64 .github/scripts/replace_cover_logos.py .github/workflows/replace-cover-logos.yml
+          git rm assets/logos/institut-agro-dijon.webp.b64 assets/logos/agro.part1 assets/logos/agro.part2 assets/logos/agro.part3 assets/logos/agro.part4 assets/logos/agro.part5 .github/scripts/replace_cover_logos.py .github/workflows/replace-cover-logos.yml
           git add index.html assets/logos/institut-agro-dijon.webp
           git commit -m "Use correct Institut Agro Dijon and CNRS logos"
           git push
