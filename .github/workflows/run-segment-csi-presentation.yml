@@ -1,0 +1,33 @@
+name: Segment CSI presentation
+on:
+  push:
+    paths:
+      - '.github/workflows/run-segment-csi-presentation.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Segment presentation
+        run: python3 tools_temp/segment_csi_presentation.py
+      - name: Validate
+        run: |
+          grep -q 'Architecture de la thèse' index.html
+          grep -q 'Ce qui a été fait en première année' index.html
+          grep -q 'Ce qui sera fait en deuxième année' index.html
+          grep -q 'Ce qu’on envisage pour compléter' index.html
+          grep -q 'Rétroplanning global' index.html
+          git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f tools_temp/segment_csi_presentation.py
+          rm -f .github/workflows/run-segment-csi-presentation.yml
+          git add -A index.html tools_temp .github
+          git commit -m "Segment CSI presentation into major sections"
+          git push
