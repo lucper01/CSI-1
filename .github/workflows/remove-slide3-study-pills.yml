@@ -1,0 +1,71 @@
+name: Remove slide 3 study pills
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-slide3-study-pills.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove study-name pills from slide 3 only
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          assert len(slides) >= 3
+          slide = slides[2]
+          title = slide.get('title') or slide.get('_fr', {}).get('title', '')
+          assert title == 'Deux axes', f'Expected slide 3 to be Deux axes, got: {title}'
+
+          changed = 0
+          for holder in (slide, slide.get('_fr', {}), slide.get('_en', {})):
+              if not isinstance(holder, dict):
+                  continue
+              content = holder.get('content', '')
+              if 'v16-pills' not in content:
+                  continue
+              new_content, n = re.subn(r'<div class="v16-pills">.*?</div>', '', content, flags=re.S)
+              if n:
+                  holder['content'] = new_content
+                  changed += n
+
+          assert changed >= 2, f'Expected study pill groups to be removed from localized slide 3 content, changed={changed}'
+          slide['content'] = slide.get('_fr', slide).get('content', slide.get('content', ''))
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          text = text[:start] + new_json + text[end:]
+          p.write_text(text, encoding='utf-8')
+
+          # Validation: slide 3 no longer contains study pills, slide 5 still does.
+          out = p.read_text(encoding='utf-8')
+          s2 = out.index(marker) + len(marker)
+          check, _ = json.JSONDecoder().raw_decode(out[s2:])
+          blob3 = check[2].get('content', '') + check[2].get('_fr', {}).get('content', '') + check[2].get('_en', {}).get('content', '')
+          assert 'v16-pills' not in blob3
+          assert check[4].get('title') == 'Deux axes'
+          blob5 = check[4].get('content', '') + check[4].get('_fr', {}).get('content', '') + check[4].get('_en', {}).get('content', '')
+          assert 'v16-pills' in blob5
+          print('OK - study-name pills removed from slide 3 only')
+      - name: Validate backup untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/remove-slide3-study-pills.yml
+          git add -A index.html .github
+          git commit -m "Remove study-name pills from slide 3"
+          git push
