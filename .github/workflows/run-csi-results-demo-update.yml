@@ -27,7 +27,7 @@ jobs:
           test -s assets/results/vibex_conditions.svg
           test -s assets/results/vibex_size_interaction.svg
           test -s assets/results/vibex_rt_interaction.svg
-          ! git diff --exit-code -- index_save.html
+          git diff --exit-code -- index_save.html
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
