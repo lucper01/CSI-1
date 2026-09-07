@@ -1,0 +1,99 @@
+name: Rework summary as path
+on:
+  push:
+    paths:
+      - '.github/workflows/rework-summary-path.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Replace summary with a six-step path
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, hashlib
+
+          def parse(path):
+              text = Path(path).read_text(encoding='utf-8')
+              marker = 'const slides = '
+              start = text.index(marker) + len(marker)
+              slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+              return text, start, start + rel_end, slides
+
+          before_save = hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest()
+          text, start, end, slides = parse('index.html')
+
+          def stitle(s):
+              return s.get('title') or s.get('_fr',{}).get('title','')
+          summary = next(s for s in slides if stitle(s) == 'Sommaire')
+
+          fr = '''<div style="display:grid;gap:18px;max-width:1180px;margin:0 auto">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch">
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">01</div><h3 style="margin:.35rem 0">Contexte théorique</h3><p style="margin:0">Poser le problème espace-temps.</p></div>
+              <div style="display:grid;place-items:center;font-size:2rem;font-weight:900;color:var(--accent)">→</div>
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">02</div><h3 style="margin:.35rem 0">Architecture de la thèse</h3><p style="margin:0">Transformer le cadre en programme expérimental.</p></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;padding-right:11%;font-size:2rem;font-weight:900;color:var(--accent)">↓</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch">
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">04</div><h3 style="margin:.35rem 0">Deuxième année</h3><p style="margin:0">Déployer les études prioritaires.</p></div>
+              <div style="display:grid;place-items:center;font-size:2rem;font-weight:900;color:var(--accent)">←</div>
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">03</div><h3 style="margin:.35rem 0">Première année</h3><p style="margin:0">Présenter les acquis et premiers résultats.</p></div>
+            </div>
+            <div style="display:flex;justify-content:flex-start;padding-left:11%;font-size:2rem;font-weight:900;color:var(--accent)">↓</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch">
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">05</div><h3 style="margin:.35rem 0">Compléments</h3><p style="margin:0">Ouvrir les extensions possibles.</p></div>
+              <div style="display:grid;place-items:center;font-size:2rem;font-weight:900;color:var(--accent)">→</div>
+              <div style="padding:22px 24px;border-radius:24px;background:var(--accent-strong);color:#fff"><div class="mono" style="color:#fff">06</div><h3 style="margin:.35rem 0;color:#fff">Rétroplanning global</h3><p style="margin:0">Projeter la suite jusqu’à la fin de la thèse.</p></div>
+            </div>
+          </div>'''
+
+          en = '''<div style="display:grid;gap:18px;max-width:1180px;margin:0 auto">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch">
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">01</div><h3 style="margin:.35rem 0">Theoretical context</h3><p style="margin:0">Frame the space-time problem.</p></div>
+              <div style="display:grid;place-items:center;font-size:2rem;font-weight:900;color:var(--accent)">→</div>
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">02</div><h3 style="margin:.35rem 0">Thesis architecture</h3><p style="margin:0">Turn the framework into an experimental programme.</p></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;padding-right:11%;font-size:2rem;font-weight:900;color:var(--accent)">↓</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch">
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">04</div><h3 style="margin:.35rem 0">Year 2</h3><p style="margin:0">Deploy the priority studies.</p></div>
+              <div style="display:grid;place-items:center;font-size:2rem;font-weight:900;color:var(--accent)">←</div>
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">03</div><h3 style="margin:.35rem 0">Year 1</h3><p style="margin:0">Present achievements and first results.</p></div>
+            </div>
+            <div style="display:flex;justify-content:flex-start;padding-left:11%;font-size:2rem;font-weight:900;color:var(--accent)">↓</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch">
+              <div style="padding:22px 24px;border:1px solid var(--line);border-radius:24px;background:var(--white)"><div class="mono">05</div><h3 style="margin:.35rem 0">Extensions</h3><p style="margin:0">Open possible complementary studies.</p></div>
+              <div style="display:grid;place-items:center;font-size:2rem;font-weight:900;color:var(--accent)">→</div>
+              <div style="padding:22px 24px;border-radius:24px;background:var(--accent-strong);color:#fff"><div class="mono" style="color:#fff">06</div><h3 style="margin:.35rem 0;color:#fff">Global timeline</h3><p style="margin:0">Project the programme through the end of the PhD.</p></div>
+            </div>
+          </div>'''
+
+          summary['kicker'] = 'Parcours de la présentation'
+          summary['lead'] = 'Six étapes, du cadre théorique à la projection globale de la thèse.'
+          summary['content'] = fr
+          summary.setdefault('_fr',{})['kicker'] = summary['kicker']
+          summary['_fr']['lead'] = summary['lead']
+          summary['_fr']['content'] = fr
+          summary.setdefault('_en',{})['kicker'] = 'Presentation path'
+          summary['_en']['lead'] = 'Six steps, from the theoretical framework to the global projection of the PhD.'
+          summary['_en']['content'] = en
+
+          new_text = text[:start] + json.dumps(slides, ensure_ascii=False, separators=(',',':')) + text[end:]
+          Path('index.html').write_text(new_text, encoding='utf-8')
+
+          after_save = hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest()
+          assert before_save == after_save
+
+      - name: Commit and clean temporary workflow
+        shell: bash
+        run: |
+          rm .github/workflows/rework-summary-path.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/rework-summary-path.yml
+          git commit -m "Rework summary as six-step path"
+          git push
