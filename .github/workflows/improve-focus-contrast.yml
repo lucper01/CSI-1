@@ -23,16 +23,16 @@ jobs:
           before=hashlib.sha256(save.read_bytes()).hexdigest()
           h=p.read_text(encoding='utf-8')
 
-          old="""  background:linear-gradient(145deg,color-mix(in srgb,var(--focus-color) 92%,#111),var(--focus-color))!important;\n  color:#fff!important;"""
-          new="""  background:linear-gradient(145deg,color-mix(in srgb,var(--focus-color) 72%,#111),color-mix(in srgb,var(--focus-color) 78%,#000))!important;\n  color:#fff!important;"""
+          old="background:linear-gradient(145deg,color-mix(in srgb,var(--focus-color) 92%,#111),var(--focus-color))!important;"
+          new="background:linear-gradient(145deg,color-mix(in srgb,var(--focus-color) 72%,#111),color-mix(in srgb,var(--focus-color) 78%,#000))!important;"
           if old not in h:
               raise SystemExit('active focus background marker not found')
           h=h.replace(old,new,1)
 
-          marker=""".slide.csi-focus-enabled .csi-focus-target.csi-focus-active>span:not(.study-token){color:rgba(255,255,255,.84)!important}\n\n"""
-          addition=""".slide.csi-focus-enabled .csi-focus-target.csi-focus-active>span:not(.study-token){color:#fff!important}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,p,li,span,small,strong,b,em,.mono,.muted,figcaption){\n  color:#fff!important;\n  text-shadow:0 1px 2px rgba(0,0,0,.34);\n}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,strong,b,.mono){\n  font-weight:950!important;\n}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(.study-token,.v16-pills span,.v16-tool-pills span,.m1-stat-grid>div){\n  background:rgba(255,255,255,.14)!important;\n  border-color:rgba(255,255,255,.34)!important;\n  color:#fff!important;\n}\n.slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div :is(b,span){color:#fff!important}\n.slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div{box-shadow:none!important}\n\n"""
+          marker="body.reduced-motion .csi-focus-target{transition:none!important;transform:none!important}"
+          addition=""".slide.csi-focus-enabled .csi-focus-target.csi-focus-active>span:not(.study-token){color:#fff!important}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,p,li,span,small,strong,b,em,.mono,.muted,figcaption){color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.34)}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(h3,h4,h5,strong,b,.mono){font-weight:950!important}\n.slide.csi-focus-enabled .csi-focus-target.csi-focus-active :is(.study-token,.v16-pills span,.v16-tool-pills span,.m1-stat-grid>div){background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.34)!important;color:#fff!important}\n.slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div :is(b,span){color:#fff!important}\n.slide.csi-focus-enabled .m1-stat-grid.csi-focus-active>div{box-shadow:none!important}\n""" + marker
           if marker not in h:
-              raise SystemExit('focus text marker not found')
+              raise SystemExit('reduced-motion marker not found')
           h=h.replace(marker,addition,1)
 
           p.write_text(h,encoding='utf-8')
