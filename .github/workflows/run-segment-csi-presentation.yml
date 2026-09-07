@@ -12,6 +12,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Harden localized architecture handling
+        run: |
+          sed -i "/c=holder.get('content','')/a\\    if 'FLUXOLF' not in c: continue" tools_temp/segment_csi_presentation.py
       - name: Segment presentation
         run: python3 tools_temp/segment_csi_presentation.py
       - name: Validate
@@ -31,4 +34,4 @@ jobs:
           git add -A index.html tools_temp .github
           git commit -m "Segment CSI presentation into major sections"
           git push
-# rerun after FLUXOLF card matcher fix
+# rerun with localized-content guard
