@@ -1,0 +1,52 @@
+name: Duplicate slide 4 between slides 2 and 3
+on:
+  push:
+    paths:
+      - '.github/workflows/duplicate-slide4-between-2-and-3.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Duplicate current slide 4 after slide 2
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, copy
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          assert len(slides) >= 4, 'Deck has fewer than 4 slides'
+          source = slides[3]
+          title = source.get('title') or source.get('_fr', {}).get('title', '')
+          assert title == 'Deux axes', f'Expected slide 4 to be Deux axes, got: {title!r}'
+
+          duplicate = copy.deepcopy(source)
+          slides.insert(2, duplicate)
+
+          assert (slides[2].get('title') or slides[2].get('_fr', {}).get('title', '')) == 'Deux axes'
+          assert (slides[4].get('title') or slides[4].get('_fr', {}).get('title', '')) == 'Deux axes'
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          text = text[:start] + new_json + text[end:]
+          p.write_text(text, encoding='utf-8')
+          print('OK - slide 4 duplicated between slides 2 and 3')
+      - name: Validate backup untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/duplicate-slide4-between-2-and-3.yml
+          git add -A index.html .github
+          git commit -m "Duplicate slide 4 between slides 2 and 3"
+          git push
