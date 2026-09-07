@@ -44,7 +44,7 @@ arch=base[3]
 for holder in [arch,arch.get('_fr',{}),arch.get('_en',{})]:
     c=holder.get('content','')
     # Remove the complete card containing FLUXOLF, without touching later FLUXOLF slides.
-    c2,n=re.subn(r'<div class=\\?"card\\?">(?:(?!<div class=\\?"card\\?">).)*?<h3>FLUXOLF</h3>.*?</div>', '', c, count=1, flags=re.S)
+    c2,n=re.subn(r'<div class="card"><div class="mono">[^<]*</div><h3>FLUXOLF</h3><p>.*?</p></div>', '', c, count=1, flags=re.S)
     assert n==1, 'FLUXOLF architecture card was not found exactly once'
     # Give the remaining five cards a balanced 3 + 2 layout.
     c2=c2.replace('<div class="grid three">','<div class="grid three architecture-core-grid">',1)
