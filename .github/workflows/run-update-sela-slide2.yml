@@ -1,0 +1,31 @@
+name: Update Sela slide 2
+on:
+  push:
+    paths:
+      - '.github/workflows/run-update-sela-slide2.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update slide 2
+        run: python3 tools_temp/update_sela_slide2.py
+      - name: Validate
+        run: |
+          grep -q 'sela-review-card' index.html
+          grep -q 'Albert%20Einstein%20Head.jpg' index.html
+          git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f tools_temp/update_sela_slide2.py
+          rm -f .github/workflows/run-update-sela-slide2.yml
+          git add -A
+          git commit -m "Enhance Sela and Sobel theory slide"
+          git push
+# trigger
