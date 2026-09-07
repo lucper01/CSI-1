@@ -1,0 +1,100 @@
+name: Insert theoretical context divider
+on:
+  push:
+    paths:
+      - '.github/workflows/insert-theory-section.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Insert divider and renumber parts
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          assert slides[0].get('title') == 'Y a-t-il un espace-temps pour les odeurs ?'
+          assert not any(s.get('title') == 'Contexte théorique' for s in slides)
+
+          # Shift every existing numbered divider by +1.
+          for s in slides:
+              if not s.get('divider'):
+                  continue
+              for key in ('content',):
+                  if isinstance(s.get(key), str):
+                      s[key] = re.sub(r'PARTIE\s+(\d+)', lambda m: f'PARTIE {int(m.group(1))+1}', s[key])
+              for loc, label in (('_fr','PARTIE'),('_en','PART')):
+                  if loc in s and isinstance(s[loc].get('content'), str):
+                      if loc == '_fr':
+                          s[loc]['content'] = re.sub(r'PARTIE\s+(\d+)', lambda m: f'PARTIE {int(m.group(1))+1}', s[loc]['content'])
+                      else:
+                          s[loc]['content'] = re.sub(r'PART\s+(\d+)', lambda m: f'PART {int(m.group(1))+1}', s[loc]['content'])
+
+          fr = {
+              'section':'Cadre théorique',
+              'kicker':'',
+              'title':'Contexte théorique',
+              'lead':'',
+              'content':'<div class="section-divider-inner"><span class="section-divider-number">PARTIE 1</span><h1>Contexte théorique</h1><i aria-hidden="true"></i></div>',
+              'notes':''
+          }
+          en = {
+              'section':'Theoretical context',
+              'kicker':'',
+              'title':'Theoretical context',
+              'lead':'',
+              'content':'<div class="section-divider-inner"><span class="section-divider-number">PART 1</span><h1>Theoretical context</h1><i aria-hidden="true"></i></div>',
+              'notes':''
+          }
+          divider = {
+              'chapter':'Cadre théorique','study':'','appendix':False,'hero':True,'divider':True,
+              '_fr':fr,'_en':en,**fr
+          }
+          slides.insert(1, divider)
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          p.write_text(text[:start] + new_json + text[end:], encoding='utf-8')
+
+          # Validate exact part numbering on the six dividers.
+          out = p.read_text(encoding='utf-8')
+          s0 = out.index(marker) + len(marker)
+          check, _ = json.JSONDecoder().raw_decode(out[s0:])
+          dividers = [s for s in check if s.get('divider') and not s.get('appendix')]
+          expected_titles = [
+              'Contexte théorique',
+              'Architecture de la thèse',
+              'Ce qui a été fait en première année',
+              'Ce qui sera fait en deuxième année',
+              'Ce qu’on envisage pour compléter',
+              'Rétroplanning global'
+          ]
+          assert [s.get('title') for s in dividers] == expected_titles
+          for n, s in enumerate(dividers, 1):
+              assert f'PARTIE {n}' in s['content'], (n, s.get('title'), s.get('content'))
+              assert f'PART {n}' in s['_en']['content'], (n, s.get('title'), s['_en'].get('content'))
+          assert check[1].get('title') == 'Contexte théorique'
+          print('OK - theoretical context inserted and parts renumbered 1 to 6')
+
+      - name: Validate saved checkpoint untouched
+        run: git diff --exit-code -- index_save.html
+
+      - name: Remove temporary workflow and commit
+        run: |
+          rm -f .github/workflows/insert-theory-section.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/insert-theory-section.yml
+          git commit -m 'Add theoretical context as part 1'
+          git push
