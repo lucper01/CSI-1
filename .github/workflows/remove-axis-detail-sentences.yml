@@ -1,0 +1,67 @@
+name: Remove axis detail sentences
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-axis-detail-sentences.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove detail sentences from slides 3 and 5
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          sent1 = "Cet axe examine notamment les fenêtres temporelles d’intégration, la perception des débuts et fins de stimulation, la durée, la synchronie intermodale et les mécanismes d’orientation spatiale entre modalités."
+          sent2 = "Cet axe porte notamment sur la mémoire des limites spatiales, l’attention, la congruence multisensorielle et les biais perceptifs induits par le contexte olfactif."
+
+          for idx in (2, 4):
+              slide = slides[idx]
+              assert (slide.get('title') or slide.get('_fr', {}).get('title')) == 'Deux axes', f'Slide {idx+1} is not Deux axes'
+              changed = 0
+              for holder in (slide, slide.get('_fr', {}), slide.get('_en', {})):
+                  if not isinstance(holder, dict):
+                      continue
+                  content = holder.get('content', '')
+                  new = content.replace(sent1, '').replace(sent2, '')
+                  if new != content:
+                      holder['content'] = new
+                      changed += 1
+              assert changed >= 2, f'Expected FR/localized content changes on slide {idx+1}'
+              slide['content'] = slide.get('_fr', slide).get('content', slide.get('content', ''))
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          text = text[:start] + new_json + text[end:]
+          p.write_text(text, encoding='utf-8')
+
+          # validation
+          out = p.read_text(encoding='utf-8')
+          s = out.index(marker) + len(marker)
+          check, _ = json.JSONDecoder().raw_decode(out[s:])
+          for idx in (2,4):
+              blob = json.dumps(check[idx], ensure_ascii=False)
+              assert sent1 not in blob and sent2 not in blob
+          print('OK - detail sentences removed from slides 3 and 5')
+      - name: Validate backup untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm -f .github/workflows/remove-axis-detail-sentences.yml
+          git add -A index.html .github
+          git commit -m "Remove redundant axis detail sentences from slides 3 and 5"
+          git push
