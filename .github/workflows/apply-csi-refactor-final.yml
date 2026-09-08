@@ -1,0 +1,75 @@
+name: Apply CSI refactor final
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-csi-refactor-final.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build refactored deck
+        run: |
+          set -e
+          BEFORE=$(sha256sum index_save.html | awk '{print $1}')
+          python - <<'PY'
+          from pathlib import Path
+          src=Path('tools_temp/csi_refactor_core_20260908.py').read_text(encoding='utf-8')
+          css_block="""if '/* CSI-STRUCTURAL-REFACTOR-20260908 */' not in text:\n    text = text.replace('</style>', css + '\\n</style>', 1)"""
+          js_block="""if 'id=\"csiVibexManualDemo\"' not in text:\n    text = text.replace('</body>', js + '\\n</body>', 1)"""
+          src=src.replace(css_block,"pass  # delayed CSS injection")
+          src=src.replace(js_block,"pass  # delayed JS injection")
+          needle="text = text[:start] + new_json + text[end:]"
+          replacement="""text = text[:start] + new_json + text[end:]\nif '/* CSI-STRUCTURAL-REFACTOR-20260908 */' not in text:\n    text = text.replace('</style>', css + '\\n</style>', 1)\nif 'id=\"csiVibexManualDemo\"' not in text:\n    text = text.replace('</body>', js + '\\n</body>', 1)"""
+          if needle not in src: raise RuntimeError('Replacement anchor missing')
+          src=src.replace(needle,replacement,1)
+          ns={'__name__':'__main__','__file__':'tools_temp/csi_refactor_core_20260908.py'}
+          exec(compile(src,'tools_temp/csi_refactor_core_20260908.py','exec'),ns,ns)
+          PY
+          AFTER=$(sha256sum index_save.html | awk '{print $1}')
+          test "$BEFORE" = "$AFTER"
+      - name: Add real DOCC logo and audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,re,hashlib
+          p=Path('index.html'); text=p.read_text(encoding='utf-8')
+          marker='const slides = '; st=text.index(marker)+len(marker); slides,rel=json.JSONDecoder().raw_decode(text[st:]); en=st+rel
+          cover=slides[0]
+          def add_logo(c):
+              if 'assets/logos/logo_docc.png' in c: return c
+              m=re.search(r'(<div class="v16-logo-cloud"[^>]*>)(.*?)(</div>)',c,re.S)
+              if not m: raise RuntimeError('Cover logo cloud not found')
+              img='<img src="assets/logos/logo_docc.png" alt="DOCC Lab">'
+              return c[:m.start()]+m.group(1)+m.group(2)+img+m.group(3)+c[m.end():]
+          for h in [cover,cover.get('_fr') or {},cover.get('_en') or {}]:
+              if h.get('content'): h['content']=add_logo(h['content'])
+          text=text[:st]+json.dumps(slides,ensure_ascii=False,separators=(',',':'))+text[en:]
+          p.write_text(text,encoding='utf-8')
+
+          # Final structural audit
+          text=p.read_text(encoding='utf-8'); st=text.index(marker)+len(marker); slides,_=json.JSONDecoder().raw_decode(text[st:])
+          main=[s for s in slides if not s.get('appendix')]; app=[s for s in slides if s.get('appendix')]
+          assert len(slides)==64 and len(main)==60 and len(app)==4
+          cb=slides[0]['content'].lower(); assert 'arnaud' in cb and 'leleu' in cb and 'hdr' in cb
+          assert 'assets/logos/logo_docc.png' in slides[0]['content']
+          for q in ['Less space, less time','Occelli et al., 2023','Capizzi et al., 2023','Di Stefano & Spence, 2025','Ampollini et al., 2024','Rekow et al., 2022','Baccarani & Brochard, 2024','Nuit des Chercheurs 2026','Expérimentarium 2027','ISOT 2028','NOUS SOMMES ICI','Mars 2028','Oct. 2028','Déc. 2028','mouvement oculaire maîtrisé']:
+              assert q in text, q
+          assert all('COBEX' not in (s.get('title','')+s.get('content','')) and 'SORBET' not in (s.get('title','')+s.get('content','')) for s in main)
+          assert any(s.get('study')=='SOLAR' and 'Axe 1' in (s.get('kicker','')+s.get('content','')) for s in main)
+          assert 'data-vibex-next' in text and 'assets/demo/Masque_SCR.webp' in text
+          assert 'apparatusPopupScript' in text and text.count('apparatus-open')>=5
+          assert '—' not in text and '–' not in text
+          assert text.count('<script')==text.count('</script>') and text.count('<style')==text.count('</style>')
+          print('AUDIT OK - total',len(slides),'main',len(main),'appendix',len(app))
+          print('backup sha256',hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest())
+          PY
+      - name: Commit deck only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refactor CSI narrative structure and planning"
+          git push
