@@ -1,0 +1,34 @@
+name: Inspect CSI hybrid slide map
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-hybrid-inspect.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print current and saved slide maps
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def load(path):
+              t=Path(path).read_text(encoding='utf-8')
+              marker='const slides = '
+              st=t.index(marker)+len(marker)
+              slides,_=json.JSONDecoder().raw_decode(t[st:])
+              return slides
+
+          for path in ['index.html','index_save.html']:
+              slides=load(path)
+              print('\n===== '+path+' =====')
+              visible=[s for s in slides if not s.get('appendix')]
+              print('VISIBLE',len(visible),'TOTAL',len(slides))
+              for i,s in enumerate(visible,1):
+                  fr=s.get('_fr') or {}
+                  print(f"{i:02d} | chapter={s.get('chapter','')} | study={s.get('study','')} | divider={bool(s.get('divider'))} | title={fr.get('title',s.get('title',''))}")
+          PY
