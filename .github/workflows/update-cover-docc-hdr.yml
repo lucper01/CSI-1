@@ -1,0 +1,66 @@
+name: Update cover DOCC and HDR
+on:
+  push:
+    paths:
+      - '.github/workflows/update-cover-docc-hdr.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update slide 1 only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, hashlib
+          p=Path('index.html')
+          save=Path('index_save.html')
+          save_hash=hashlib.sha256(save.read_bytes()).hexdigest()
+          t=p.read_text(encoding='utf-8')
+          m='const slides = '
+          st=t.index(m)+len(m)
+          slides, rel=json.JSONDecoder().raw_decode(t[st:])
+          en=st+rel
+          s=slides[0]
+          logo='<img src="assets/logos/logo_docc.png" alt="DOCC Lab">'
+          for key,english in [('_fr',False),('_en',True)]:
+              h=s[key]
+              c=h['content']
+              if logo not in c:
+                  anchor='<img src="assets/logos/institut-agro-dijon.webp" alt="L’Institut Agro Dijon">'
+                  if anchor not in c:
+                      raise RuntimeError(f'Cover logo anchor missing in {key}')
+                  c=c.replace(anchor, anchor+logo, 1)
+              if english:
+                  old='<strong>Arnaud LELEU</strong><br>Associate Professor'
+                  new='<strong>Arnaud LELEU</strong><br>Associate Professor, HDR'
+              else:
+                  old='<strong>Arnaud LELEU</strong><br>Maître de conférences'
+                  new='<strong>Arnaud LELEU</strong><br>Maître de conférences HDR'
+              if new not in c:
+                  if old not in c:
+                      raise RuntimeError(f'Arnaud title anchor missing in {key}')
+                  c=c.replace(old,new,1)
+              h['content']=c
+          s.update(s['_fr'])
+          newjson=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          out=t[:st]+newjson+t[en:]
+          p.write_text(out,encoding='utf-8')
+          if hashlib.sha256(save.read_bytes()).hexdigest()!=save_hash:
+              raise RuntimeError('index_save.html changed')
+          check=p.read_text(encoding='utf-8')
+          assert 'assets/logos/logo_docc.png' in check
+          assert 'Maître de conférences HDR' in check
+          assert 'Associate Professor, HDR' in check
+          print('COVER_UPDATE_OK')
+          print('BACKUP_SHA256',save_hash)
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add DOCC logo and HDR title on cover"
+          git push
