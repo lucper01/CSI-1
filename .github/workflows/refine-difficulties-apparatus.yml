@@ -1,0 +1,199 @@
+name: Refine difficulties and apparatus
+on:
+  push:
+    paths:
+      - '.github/workflows/refine-difficulties-apparatus.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update deck
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re, hashlib, html
+
+          p=Path('index.html')
+          save=Path('index_save.html')
+          save_hash=hashlib.sha256(save.read_bytes()).hexdigest()
+          text=p.read_text(encoding='utf-8')
+          marker='const slides = '
+          start=text.index(marker)+len(marker)
+          slides, rel_end=json.JSONDecoder().raw_decode(text[start:])
+          end=start+rel_end
+
+          targets=['TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF']
+
+          # 1) Slide 16: keep TWIXAV blue only where it belongs.
+          s16=slides[15]
+          for fld in ['content']:
+              if fld in s16:
+                  c=s16[fld]
+                  c=c.replace(';background:linear-gradient(180deg,color-mix(in srgb,#0072B2 8%, var(--white)), var(--white));','')
+                  c=c.replace('<div class="mono" style="color:#0072B2">Référence temporelle</div>','<div class="mono">Référence temporelle</div>')
+                  c=c.replace('<div class="mono" style="color:#0072B2">Temporal reference</div>','<div class="mono">Temporal reference</div>')
+                  s16[fld]=c
+          for loc in ['_fr','_en']:
+              if loc in s16 and 'content' in s16[loc]:
+                  c=s16[loc]['content']
+                  c=c.replace(';background:linear-gradient(180deg,color-mix(in srgb,#0072B2 8%, var(--white)), var(--white));','')
+                  c=c.replace('<div class="mono" style="color:#0072B2">Référence temporelle</div>','<div class="mono">Référence temporelle</div>')
+                  c=c.replace('<div class="mono" style="color:#0072B2">Temporal reference</div>','<div class="mono">Temporal reference</div>')
+                  s16[loc]['content']=c
+
+          # 2) Rebuild the five difficulty slides using the same visual grammar as the other study slides.
+          difficulty = {
+            'TWIXAV': {
+              'fr':('Études de l’année 1','TWIXAV - Retour technique','TWIXAV - difficultés techniques rencontrées',
+                    'Le principal enjeu a été de faire du timing audiovisuel une variable réellement contrôlée, et pas seulement une valeur programmée.',
+                    [('Timing écran','Les durées et les SOA sont contraints par le rafraîchissement réel de l’écran.','Mesure du refresh, conversion des durées en frames entières et contrôle des événements réellement présentés.'),
+                     ('Synchronisation audiovisuelle','Les chaînes visuelle et auditive n’introduisent pas exactement les mêmes délais.','Ordonnancement explicite des onsets, prétests répétés et journalisation des événements pour vérifier le SOA réellement produit.'),
+                     ('Robustesse du protocole','Un changement de paramètres d’affichage ou de poste peut modifier un paradigme temporel.','Paramètres critiques verrouillés, contrôle au lancement et validation systématique sur des essais pilotes.')],
+                    'Résultat : le timing est devenu une propriété mesurée et vérifiée du dispositif.'),
+              'en':('Year 1 studies','TWIXAV - Technical feedback','TWIXAV - technical difficulties encountered',
+                    'The main challenge was to make audiovisual timing genuinely controlled rather than merely programmed.',
+                    [('Display timing','Durations and SOAs are constrained by the actual screen refresh rate.','Measure refresh rate, convert durations into integer frame counts and check the events actually presented.'),
+                     ('Audiovisual synchronization','Visual and auditory presentation chains do not introduce exactly the same delays.','Explicit onset scheduling, repeated pre-tests and event logging to verify the SOA actually produced.'),
+                     ('Protocol robustness','Display or workstation changes can alter a temporal paradigm.','Lock critical parameters, run startup checks and systematically validate the setup with pilot trials.')],
+                    'Outcome: timing became a measured and verified property of the setup.')},
+            'VIBEX': {
+              'fr':('Études de l’année 1','VIBEX - Retour technique','VIBEX - difficultés techniques rencontrées',
+                    'Le verrou technique était de contrôler simultanément le temps d’exposition, la géométrie des scènes et la synchronisation des différents systèmes.',
+                    [('Durée d’affichage','Présenter une scène pendant une durée précise dépend du rafraîchissement réel de l’écran.','Durées calées sur le refresh, raisonnement en frames lorsque nécessaire et contrôle des onsets et offsets lors des prétests.'),
+                     ('Tailles et cadrages','Les différentes conditions doivent varier sans introduire de différences parasites de résolution, de zoom ou de position.','Stimuli et gabarits d’affichage standardisés, zone de présentation fixe et vérification systématique des transformations d’image.'),
+                     ('Systèmes synchronisés','Affichage, réponses et systèmes de contrôle ou d’acquisition doivent coexister sans dérive temporelle.','Déroulement centralisé dans PsychoPy, horodatage commun des événements et validation de la chaîne complète sur des essais pilotes.')],
+                    'Résultat : le paradigme visuel est devenu une base technique suffisamment stable pour être réutilisée dans OASIS.'),
+              'en':('Year 1 studies','VIBEX - Technical feedback','VIBEX - technical difficulties encountered',
+                    'The technical challenge was to control exposure time, scene geometry and synchronization across the different systems at the same time.',
+                    [('Display duration','Presenting a scene for a precise duration depends on the actual screen refresh rate.','Align durations with refresh rate, use frame-based timing when needed and check onsets and offsets during pre-tests.'),
+                     ('Sizes and crops','Conditions must vary without introducing unwanted differences in resolution, zoom or position.','Standardize stimuli and display templates, keep a fixed presentation area and systematically verify image transformations.'),
+                     ('Synchronized systems','Display, responses and control or acquisition systems must coexist without temporal drift.','Centralize trial execution in PsychoPy, use common event timestamps and validate the complete chain with pilot trials.')],
+                    'Outcome: the visual paradigm became a sufficiently stable technical basis for OASIS.')},
+            'SOFT': {
+              'fr':('Deuxième année','SOFT - Développement technique','SOFT - difficultés techniques rencontrées',
+                    'SOFT concentre le principal verrou instrumental : faire fonctionner plusieurs modalités et plusieurs appareils sur une chronologie expérimentale commune.',
+                    [('Affichage et timing','Le double écran et le plein écran sont instables dans l’environnement Windows 7 / PsychoPy, et les durées visuelles dépendent du refresh.','Mode fenêtré quasi plein écran, mesure du refresh au lancement et conversion des durées visuelles en frames avec journalisation des durées obtenues.'),
+                     ('Coexistence des systèmes','PsychoPy doit piloter ou écouter simultanément Sniff-0, Spir-0, BIOPAC et l’EEG, avec des interfaces différentes.','Architecture modulaire, activation indépendante des appareils, états visibles, initialisation contrôlée et journalisation centralisée.'),
+                     ('Respiration et triggers','La stimulation olfactive doit partir sur l’inspiration tout en respectant la polarité du Spir-0 et la limite 8 bits de l’EEG.','Front d’inspiration utilisé comme référence, test de polarité au démarrage et cartographie de triggers maintenue sous 255.')],
+                    'Résultat : plusieurs appareils indépendants fonctionnent désormais comme une seule chaîne expérimentale pilotée et observable.'),
+              'en':('Year 2','SOFT - Technical development','SOFT - technical difficulties encountered',
+                    'SOFT concentrates the main instrumentation challenge: running several modalities and devices on a common experimental timeline.',
+                    [('Display and timing','Dual-screen and fullscreen behavior are unstable in the Windows 7 / PsychoPy environment, and visual durations depend on refresh rate.','Near-fullscreen windowed mode, refresh measurement at startup and frame-based visual durations with achieved-duration logging.'),
+                     ('System coexistence','PsychoPy must simultaneously control or listen to Sniff-0, Spir-0, BIOPAC and EEG through different interfaces.','Modular architecture, independent device activation, visible states, controlled initialization and centralized logging.'),
+                     ('Respiration and triggers','Olfactory stimulation must start on inhalation while respecting Spir-0 polarity and the 8-bit EEG trigger limit.','Use the inhalation edge as reference, test polarity at startup and keep the trigger map below 255.')],
+                    'Outcome: several independent devices now operate as a single controlled and observable experimental chain.')},
+            'OASIS': {
+              'fr':('Deuxième année','OASIS - Développement technique','OASIS - difficultés techniques rencontrées',
+                    'Le défi est d’ajouter l’olfaction au paradigme VIBEX sans perdre le contrôle temporel et visuel déjà obtenu.',
+                    [('Vision et olfaction','La délivrance d’une odeur ne doit pas perturber la durée d’affichage des scènes ni les conditions visuelles héritées de VIBEX.','Cœur visuel de VIBEX conservé tel quel et module olfactif appelé par la même logique d’essai.'),
+                     ('Systèmes synchronisés','Affichage, olfactométrie, détection respiratoire et acquisition doivent partager une chronologie commune.','Architecture modulaire héritée de SOFT, timestamps centralisés et événements olfactifs déclenchés à partir de l’état respiratoire détecté.'),
+                     ('Flush et résiduel olfactif','Une odeur peut persister entre deux essais et contaminer la condition suivante.','Calibration, tests de flux, purge / flush et fenêtres inter-essais prévues avant une nouvelle stimulation.')],
+                    'Résultat : OASIS réutilise deux briques déjà stabilisées - VIBEX pour le visuel et SOFT pour l’intégration olfactométrique.'),
+              'en':('Year 2','OASIS - Technical development','OASIS - technical difficulties encountered',
+                    'The challenge is to add olfaction to VIBEX without losing the temporal and visual control already achieved.',
+                    [('Vision and olfaction','Odor delivery must not disturb scene exposure duration or the visual conditions inherited from VIBEX.','Keep the VIBEX visual core unchanged and call the olfactory module from the same trial logic.'),
+                     ('Synchronized systems','Display, olfactometry, respiratory detection and acquisition must share a common timeline.','Reuse the modular SOFT architecture, centralize timestamps and trigger olfactory events from the detected respiratory state.'),
+                     ('Flush and odor residual','Odor can persist between trials and contaminate the next condition.','Calibration, flow checks, purge / flush and inter-trial windows before a new stimulation.')],
+                    'Outcome: OASIS reuses two stabilized building blocks - VIBEX for vision and SOFT for olfactometer integration.')},
+            'TWIXOLF': {
+              'fr':('Deuxième année','TWIXOLF - Développement technique','TWIXOLF - difficultés techniques rencontrées',
+                    'La difficulté centrale est de transformer une stimulation olfactive dépendante du sniff en un événement temporel suffisamment défini pour construire des SOA.',
+                    [('Onset olfactif','L’ouverture d’une voie olfactive n’est pas équivalente à l’arrivée effective de l’odeur : transport et inspiration introduisent leur propre latence.','Inspiration détectée utilisée comme ancre temporelle, calibration du flux et journalisation séparée de la commande et des événements respiratoires.'),
+                     ('SOA intermodal','Le décalage avec l’autre modalité doit être construit à partir d’un repère réellement reproductible.','Chronologie commune fondée sur l’événement respiratoire et validation des délais instrumentaux avant la collecte principale.'),
+                     ('Purge et répétition','Le résiduel olfactif et l’adaptation rendent les essais successifs moins indépendants qu’en vision ou en audition.','Purge / flush, contrôle des flux et intervalles inter-essais adaptés afin de repartir d’un état aussi stable que possible.')],
+                    'Résultat visé : rendre l’odeur horodatable et répétable avant de lui appliquer la logique de fenêtre temporelle de TWIXAV.'),
+              'en':('Year 2','TWIXOLF - Technical development','TWIXOLF - technical difficulties encountered',
+                    'The central challenge is turning sniff-dependent olfactory stimulation into a sufficiently well-defined temporal event for constructing SOAs.',
+                    [('Olfactory onset','Opening an olfactory channel is not equivalent to effective odor arrival: transport and inhalation add their own latency.','Use detected inhalation as the temporal anchor, calibrate flow and separately log commands and respiratory events.'),
+                     ('Crossmodal SOA','The delay relative to the other modality must be built from a genuinely reproducible reference.','Use a common timeline anchored to the respiratory event and validate instrumental delays before the main data collection.'),
+                     ('Purge and repetition','Odor residual and adaptation make successive trials less independent than in vision or audition.','Use purge / flush, flow control and suitable inter-trial intervals to return to as stable a state as possible.')],
+                    'Target outcome: make odor timing reproducible before applying the TWIXAV temporal-window logic.')}
+          }
+
+          def build_content(items,take):
+              cards=[]
+              for j,(title,problem,solution) in enumerate(items):
+                  cls='card dark' if j==2 else 'card'
+                  cards.append(f'<div class="{cls}"><h3>{title}</h3><p>{problem}</p><p><strong>Solution :</strong> {solution}</p></div>')
+              return '<div class="grid three">'+''.join(cards)+'</div><div class="callout" style="margin-top:16px"><strong>'+take.split(':',1)[0]+':</strong>'+(':'+take.split(':',1)[1] if ':' in take else take)+'</div>'
+
+          for study in targets:
+              matches=[s for s in slides if s.get('study')==study and 'difficult' in ((s.get('title') or '')+' '+((s.get('_fr') or {}).get('title') or '')).lower()]
+              if len(matches)!=1:
+                  raise RuntimeError(f'Expected one difficulty slide for {study}, got {len(matches)}')
+              s=matches[0]
+              fr=difficulty[study]['fr']; en=difficulty[study]['en']
+              fr_obj={'section':fr[0],'kicker':fr[1],'title':fr[2],'lead':fr[3],'content':build_content(fr[4],fr[5]),'notes':'Présenter les difficultés comme des verrous techniques résolus ou en cours de résolution, sans revenir aux analyses statistiques.'}
+              en_obj={'section':en[0],'kicker':en[1],'title':en[2],'lead':en[3],'content':build_content(en[4],en[5]).replace('<strong>Solution :</strong>','<strong>Solution:</strong>'),'notes':'Present these as technical challenges solved or being solved, rather than statistical-analysis issues.'}
+              s['_fr']=fr_obj; s['_en']=en_obj
+              s.update(fr_obj)
+
+          # 3) Rename every method-slide material card to a clickable apparatus control.
+          card_re=re.compile(r'<div class="float-card"><b>(?:Matériel|Material|Equipment)</b><span>(.*?)</span></div>')
+          apparatus_seen={}
+          for s in slides:
+              if s.get('study') not in targets or 'méthode' not in ((s.get('title') or '')+' '+((s.get('_fr') or {}).get('title') or '')).lower():
+                  continue
+              study=s['study']
+              for holder,lang in [(s,'fr'),(s.get('_fr') or {},'fr'),(s.get('_en') or {},'en')]:
+                  if 'content' not in holder: continue
+                  c=holder['content']
+                  def repl(m):
+                      items=m.group(1).strip()
+                      apparatus_seen.setdefault(study,items)
+                      label='Appareillage' if lang=='fr' else 'Equipment'
+                      return f'<button class="float-card apparatus-open" type="button" data-apparatus-study="{study}" data-apparatus-items="{html.escape(items,quote=True)}"><b>{label}</b><span>{items}</span></button>'
+                  c,n=card_re.subn(repl,c,1)
+                  holder['content']=c
+              if study not in apparatus_seen:
+                  raise RuntimeError(f'No material card found for {study}')
+
+          # Re-serialize slides before injecting modal code.
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          text=text[:start]+new_json+text[end:]
+
+          css='''\n/* apparatus-popup-v1 */\n.apparatus-open{font:inherit;text-align:left;appearance:none;cursor:pointer;color:var(--text);}\n.apparatus-open:hover{transform:translateY(-2px);}\n.apparatus-modal[hidden]{display:none!important}.apparatus-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px}.apparatus-backdrop{position:absolute;inset:0;background:rgba(8,20,16,.64);backdrop-filter:blur(7px)}.apparatus-panel{--apparatus:#2f6f9f;position:relative;width:min(1040px,94vw);max-height:88vh;overflow:auto;border:1px solid color-mix(in srgb,var(--apparatus) 35%,var(--line));border-radius:28px;background:var(--white);color:var(--text);box-shadow:0 28px 80px rgba(0,0,0,.28);padding:28px}.apparatus-panel:before{content:"";display:block;width:72px;height:5px;border-radius:99px;background:var(--apparatus);margin-bottom:18px}.apparatus-close{position:absolute;right:18px;top:16px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--white);color:var(--text);font-size:1.45rem;cursor:pointer}.apparatus-panel h2{margin:4px 52px 8px 0}.apparatus-lead{margin:0 0 20px;color:var(--muted)}.apparatus-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}.apparatus-card{overflow:hidden;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--white) 95%,var(--apparatus) 5%);min-height:260px}.apparatus-card-media{height:150px;display:grid;place-items:center;background:#fff;border-bottom:1px solid var(--line);padding:12px}.apparatus-card-media img{width:100%;height:100%;object-fit:contain}.apparatus-card-copy{padding:15px}.apparatus-card-copy h3{margin:0 0 7px;font-size:1.05rem;color:var(--apparatus)}.apparatus-card-copy p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.45}@media(max-width:700px){.apparatus-modal{padding:10px}.apparatus-panel{padding:20px;border-radius:22px}.apparatus-grid{grid-template-columns:1fr 1fr}.apparatus-card-media{height:115px}}\n'''
+          if '/* apparatus-popup-v1 */' not in text:
+              text=text.replace('</style>',css+'</style>',1)
+
+          modal='''\n<div class="apparatus-modal" id="apparatusModal" hidden aria-hidden="true"><div class="apparatus-backdrop" data-apparatus-close></div><section class="apparatus-panel" id="apparatusPanel" role="dialog" aria-modal="true" aria-labelledby="apparatusTitle"><button class="apparatus-close" type="button" data-apparatus-close aria-label="Fermer">×</button><span class="eyebrow" id="apparatusEyebrow">Appareillage</span><h2 id="apparatusTitle">Appareillage</h2><p class="apparatus-lead" id="apparatusLead"></p><div class="apparatus-grid" id="apparatusGrid"></div></section></div>\n'''
+          if 'id="apparatusModal"' not in text:
+              script_marker='<script>\n  const slides = '
+              pos=text.index(script_marker)
+              text=text[:pos]+modal+text[pos:]
+
+          js=r'''\n<script id="apparatusPopupScript">\n(()=>{\n const modal=document.getElementById('apparatusModal'), panel=document.getElementById('apparatusPanel'), grid=document.getElementById('apparatusGrid'), title=document.getElementById('apparatusTitle'), lead=document.getElementById('apparatusLead'), eyebrow=document.getElementById('apparatusEyebrow');\n if(!modal) return;\n const studyColors={TWIXAV:'#0072B2',VIBEX:'#2f7d5a',SOFT:'#7652a8',OASIS:'#b44e6c',TWIXOLF:'#c36c32'};\n const equipment=[\n  {keys:['psychopy'],name:'PsychoPy',img:'https://www.psychopy.org/_static/psychopyLogoType.png',fr:'Pilotage du paradigme, présentation des stimuli, réponses et horodatage des événements.',en:'Paradigm control, stimulus presentation, responses and event timestamps.'},\n  {keys:['sniff-0','sniffo','sniff0'],name:'Sniff-0',img:'https://www.cynexo.com/wp-content/uploads/2018/09/sniff-O-foto1.jpg',fr:'Olfactomètre multicanal utilisé pour délivrer les odeurs et recevoir les commandes de stimulation.',en:'Multichannel olfactometer used to deliver odors and receive stimulation commands.'},\n  {keys:['spir-0','spiro','spir0'],name:'Spir-0',img:'https://www.cynexo.com/wp-content/uploads/2020/09/spir-O-foto2.jpg',fr:'Suivi du cycle respiratoire et détection du début de l’inspiration pour synchroniser la stimulation olfactive.',en:'Respiratory-cycle monitoring and inhalation-onset detection for olfactory synchronization.'},\n  {keys:['biopac mp160','biopac','mp160'],name:'BIOPAC MP160',img:'https://upwards.com.tw/wp-content/uploads/2018/05/A01-Biopac-MP160-cover.jpg',fr:'Acquisition physiologique et réception / envoi des marqueurs de synchronisation.',en:'Physiological acquisition and synchronization-marker input / output.'},\n  {keys:['eeg biosemi','biosemi','eeg'],name:'EEG BioSemi',img:'https://www.biosemi.com/pics/module_active2_medium1.jpg',fr:'Système EEG BioSemi utilisé pour l’acquisition électrophysiologique et les triggers expérimentaux.',en:'BioSemi EEG system used for electrophysiological acquisition and experimental triggers.'},\n  {keys:['écran','ecran','display','screen'],name:'Écran de stimulation',img:'',fr:'Présentation visuelle contrôlée avec timing dépendant du taux de rafraîchissement mesuré.',en:'Controlled visual presentation with timing tied to the measured refresh rate.'},\n  {keys:['audio','casque','haut-parleur','sound'],name:'Système audio',img:'',fr:'Présentation des événements auditifs du paradigme.',en:'Presentation of auditory events in the paradigm.'}\n ];\n function esc(s){return String(s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}\n function svgFallback(label){const t=esc(label).slice(0,24);return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="340" viewBox="0 0 600 340"><rect width="600" height="340" rx="28" fill="#f4f2eb"/><rect x="145" y="70" width="310" height="170" rx="18" fill="none" stroke="#6b756f" stroke-width="8"/><path d="M250 270h100M300 240v30" stroke="#6b756f" stroke-width="10" stroke-linecap="round"/><text x="300" y="315" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" fill="#24302b">${t}</text></svg>`)}\n function infoFor(raw){const k=raw.toLowerCase().trim();return equipment.find(e=>e.keys.some(x=>k.includes(x)))||{name:raw,img:'',fr:'Élément du dispositif expérimental utilisé dans cette étude.',en:'Component of the experimental setup used in this study.'};}\n function open(btn){const isEn=(document.documentElement.lang||'fr').toLowerCase().startsWith('en');const study=btn.dataset.apparatusStudy||'';const raw=(btn.dataset.apparatusItems||'').split(/[·;]+/).map(x=>x.trim()).filter(Boolean);panel.style.setProperty('--apparatus',studyColors[study]||'#2f6f9f');eyebrow.textContent=isEn?'Equipment':'Appareillage';title.textContent=`${study} - ${isEn?'Equipment':'Appareillage'}`;lead.textContent=isEn?'Devices and tools used in the experimental setup.':'Appareils et outils utilisés dans le dispositif expérimental.';grid.innerHTML='';raw.forEach(item=>{const inf=infoFor(item);const card=document.createElement('article');card.className='apparatus-card';const src=inf.img||svgFallback(inf.name);card.innerHTML=`<div class="apparatus-card-media"><img src="${esc(src)}" alt="${esc(inf.name)}" loading="lazy" referrerpolicy="no-referrer"></div><div class="apparatus-card-copy"><h3>${esc(inf.name)}</h3><p>${esc(isEn?inf.en:inf.fr)}</p></div>`;const im=card.querySelector('img');im.addEventListener('error',()=>{im.src=svgFallback(inf.name)},{once:true});grid.appendChild(card)});modal.hidden=false;modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';panel.focus?.()}\n function close(){modal.hidden=true;modal.setAttribute('aria-hidden','true');document.body.style.overflow=''}\n document.addEventListener('click',e=>{const b=e.target.closest('.apparatus-open');if(b){e.preventDefault();e.stopPropagation();open(b);return}if(e.target.closest('[data-apparatus-close]')) close()});\n document.addEventListener('keydown',e=>{if(modal.hidden)return;if(e.key==='Escape'){e.preventDefault();close()}else if(['ArrowLeft','ArrowRight','PageUp','PageDown',' '].includes(e.key)){e.stopImmediatePropagation()}},true);\n})();\n</script>\n'''
+          if 'id="apparatusPopupScript"' not in text:
+              text=text.replace('</body>',js+'</body>',1)
+
+          p.write_text(text,encoding='utf-8')
+          if hashlib.sha256(save.read_bytes()).hexdigest()!=save_hash:
+              raise RuntimeError('index_save.html changed')
+
+          # Validation against the final file.
+          final=p.read_text(encoding='utf-8')
+          mstart=final.index(marker)+len(marker)
+          check,_=json.JSONDecoder().raw_decode(final[mstart:])
+          assert len([s for s in check if s.get('study') in targets and 'difficult' in ((s.get('title') or '')).lower()])==5
+          assert 'Appareillage</b>' in final
+          assert 'apparatus-popup-v1' in final and 'apparatusPopupScript' in final
+          c16=check[15]['content']
+          assert 'background:linear-gradient' not in c16
+          assert '<div class="mono" style="color:#0072B2">Référence temporelle</div>' not in c16
+          print('Slides:',len(check))
+          print('Apparatus:',apparatus_seen)
+          print('index_save sha256:',save_hash)
+          PY
+      - name: Commit and clean workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refine technical slides and add apparatus popups"
+          rm .github/workflows/refine-difficulties-apparatus.yml
+          git add .github/workflows/refine-difficulties-apparatus.yml
+          git commit -m "Remove temporary apparatus workflow"
+          git push
