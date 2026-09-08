@@ -1,0 +1,25 @@
+name: Inspect CSI backup
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-csi-backup.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory backup slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          t=Path('index_save.html').read_text(encoding='utf-8')
+          m='const slides = '; st=t.index(m)+len(m); slides,_=json.JSONDecoder().raw_decode(t[st:])
+          print('COUNT',len(slides))
+          for i,s in enumerate(slides,1):
+              c=re.sub(r'<[^>]+>',' ',s.get('content',''))
+              c=re.sub(r'\s+',' ',c).strip()[:220]
+              print(f"{i:02d}|chapter={s.get('chapter','')}|study={s.get('study','')}|appendix={s.get('appendix',False)}|class={s.get('className','')}|layout={s.get('layout','')}|kicker={s.get('kicker','')}|title={s.get('title','')}|{c}")
+          PY
