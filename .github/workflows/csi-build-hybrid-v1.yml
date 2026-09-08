@@ -1,0 +1,177 @@
+name: Build CSI hybrid from frozen save
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-build-hybrid-v1.yml'
+permissions:
+  contents: write
+jobs:
+  hybrid:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build hybrid presentation from save plus selected current slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, copy, re, hashlib
+
+          MARKER='const slides = '
+
+          def parse(path):
+              text=Path(path).read_text(encoding='utf-8')
+              st=text.index(MARKER)+len(MARKER)
+              slides, rel=json.JSONDecoder().raw_decode(text[st:])
+              return text, st, st+rel, slides
+
+          def title(s):
+              return (s.get('_fr') or {}).get('title', s.get('title',''))
+
+          def visible(slides):
+              return [copy.deepcopy(s) for s in slides if not s.get('appendix')]
+
+          def canon(s):
+              return json.dumps(s, ensure_ascii=False, sort_keys=True, separators=(',',':'))
+
+          def replace_study_block(seq, study, replacement):
+              ids=[i for i,s in enumerate(seq) if s.get('study')==study]
+              assert ids, f'No {study} block in save'
+              assert ids==list(range(ids[0],ids[-1]+1)), f'{study} block not contiguous'
+              return seq[:ids[0]] + copy.deepcopy(replacement) + seq[ids[-1]+1:]
+
+          cur_text, cur_st, cur_end, cur_all=parse('index.html')
+          save_text, save_st, save_end, save_all=parse('index_save.html')
+          cur=visible(cur_all)
+          base=visible(save_all)
+          save_appendix=[copy.deepcopy(s) for s in save_all if s.get('appendix')]
+
+          assert len(cur)==56, f'Unexpected current visible count: {len(cur)}'
+          assert len(base)==62, f'Unexpected save visible count: {len(base)}'
+          assert len(save_appendix)==2, f'Unexpected save appendix count: {len(save_appendix)}'
+
+          # Exact current selections requested by the user.
+          # Part 1 = current slides 3 through 12, ending just before Architecture.
+          assert title(cur[2])=='Contexte théorique'
+          assert title(cur[12])=='Architecture de la thèse'
+          part1=copy.deepcopy(cur[2:12])
+
+          twixav=[copy.deepcopy(s) for s in cur if s.get('study')=='TWIXAV']
+          assert [title(s) for s in twixav]==[
+              'TWIXAV - référence audiovisuelle',
+              'TWIXAV - paradigme',
+              'TWIXAV - Temporal Binding Window',
+              'TWIXAV - vers SOFT',
+              'TWIXAV - ce que l’on garde'
+          ]
+
+          # Current visible slides 25-28 only for VIBEX.
+          vibex_new=copy.deepcopy(cur[24:28])
+          assert [title(s) for s in vibex_new]==[
+              'VIBEX - effet des conditions',
+              'VIBEX - effet de la taille',
+              'VIBEX - temps de réponse',
+              'VIBEX - ce que cela apporte à l’olfaction'
+          ]
+
+          soft=[copy.deepcopy(s) for s in cur if s.get('study')=='SOFT']
+          oasis=[copy.deepcopy(s) for s in cur if s.get('study')=='OASIS']
+          twixolf=[copy.deepcopy(s) for s in cur if s.get('study')=='TWIXOLF']
+          assert len(soft)==2 and len(oasis)==2 and len(twixolf)==2
+
+          # Current visible slide 53 only.
+          retro=copy.deepcopy(cur[52])
+          assert title(retro)=='Rétroplanning - jusqu’à la soutenance'
+
+          selected_current = part1 + twixav + vibex_new + soft + oasis + twixolf + [retro]
+
+          out=copy.deepcopy(base)
+
+          # 1. Replace only the saved Part 1 with the current Part 1.
+          a=next(i for i,s in enumerate(out) if s.get('divider') and title(s)=='Contexte théorique')
+          b=next(i for i,s in enumerate(out) if i>a and s.get('divider') and title(s)=='Architecture de la thèse')
+          out=out[:a] + copy.deepcopy(part1) + out[b:]
+
+          # 2. Replace the whole saved TWIXAV block with the whole current TWIXAV block.
+          out=replace_study_block(out,'TWIXAV',twixav)
+
+          # 3. VIBEX: keep saved intro + method and saved difficulties, replace only the four middle result/bilan slides.
+          ids=[i for i,s in enumerate(out) if s.get('study')=='VIBEX']
+          assert ids==list(range(ids[0],ids[-1]+1))
+          old_vibex=[copy.deepcopy(out[i]) for i in ids]
+          assert [title(s) for s in old_vibex]==[
+              'VIBEX - pourquoi établir une référence visuelle ?',
+              'VIBEX - Méthode',
+              'VIBEX - l’asymétrie SL-LS reproduit la Boundary Extension',
+              'VIBEX - la taille module l’effet sans effet principal global',
+              'VIBEX - les temps de réaction convergent avec les jugements',
+              'VIBEX - ce que le prétest permet maintenant',
+              'VIBEX - difficultés techniques et solutions'
+          ]
+          vibex_hybrid=old_vibex[:2] + copy.deepcopy(vibex_new) + old_vibex[-1:]
+          out=out[:ids[0]] + vibex_hybrid + out[ids[-1]+1:]
+
+          # 4. Replace all saved SOFT, OASIS and TWIXOLF slides with the current versions.
+          out=replace_study_block(out,'SOFT',soft)
+          out=replace_study_block(out,'OASIS',oasis)
+          out=replace_study_block(out,'TWIXOLF',twixolf)
+
+          # 5. Keep the saved retroplanning and add current slide 53 immediately after it.
+          rp=next(i for i,s in enumerate(out) if title(s)=='Rétroplanning des études')
+          out=out[:rp+1] + [copy.deepcopy(retro)] + out[rp+1:]
+
+          # Reattach ONLY the two appendices from the frozen save.
+          final_slides=out + save_appendix
+
+          # Provenance guard: every output slide must be either exact save content or one of the explicit current selections.
+          save_set={canon(s) for s in save_all}
+          selected_set={canon(s) for s in selected_current}
+          for s in final_slides:
+              assert canon(s) in save_set or canon(s) in selected_set, 'A slide has unauthorized provenance'
+
+          # Ensure no current appendix or other unrequested current slide leaked in.
+          assert sum(1 for s in final_slides if s.get('appendix'))==2
+          assert [title(s) for s in final_slides if s.get('appendix')]==[
+              title(s) for s in save_appendix
+          ]
+
+          # Build index.html from the SAVED HTML shell, changing only the slides JSON payload.
+          new_json=json.dumps(final_slides, ensure_ascii=False, separators=(',',':'))
+          new_text=save_text[:save_st] + new_json + save_text[save_end:]
+
+          # Strong guards: CSS and all non-slide HTML/JS are byte-for-byte from the save.
+          assert new_text[:save_st]==save_text[:save_st]
+          assert new_text[save_st+len(new_json):]==save_text[save_end:]
+          assert re.findall(r'<style\b[^>]*>.*?</style>',new_text,flags=re.S|re.I)==re.findall(r'<style\b[^>]*>.*?</style>',save_text,flags=re.S|re.I)
+
+          Path('index.html').write_text(new_text, encoding='utf-8')
+
+          # Frozen save must remain untouched.
+          assert hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest()==hashlib.sha256(save_text.encode('utf-8')).hexdigest()
+
+          vis=[s for s in final_slides if not s.get('appendix')]
+          print('HYBRID VISIBLE',len(vis),'TOTAL',len(final_slides))
+          print('--- HYBRID MAP ---')
+          for i,s in enumerate(vis,1):
+              print(f"{i:02d} | study={s.get('study','')} | title={title(s)}")
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',t,flags=re.S|re.I)
+          assert scripts
+          Path('/tmp/csi.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/csi.js
+      - name: Verify frozen backup blob
+        run: |
+          test "$(git hash-object index_save.html)" = "72cb642016506490fd8b5a88c0161371ee4eea28"
+      - name: Commit hybrid presentation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Build CSI hybrid from save and selected new slides"
+          git push
