@@ -1,0 +1,88 @@
+name: Remove study axis and timeline labels
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-remove-study-axis-timeline.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove axis labels and part timelines from study slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re, hashlib
+
+          p=Path('index.html')
+          save=Path('index_save.html')
+          save_hash=hashlib.sha256(save.read_bytes()).hexdigest()
+          text=p.read_text(encoding='utf-8')
+          styles_before=re.findall(r'<style\b[^>]*>.*?</style>',text,flags=re.S|re.I)
+          marker='const slides = '
+          st=text.index(marker)+len(marker)
+          slides, rel=json.JSONDecoder().raw_decode(text[st:])
+
+          timeline_re=re.compile(r'<div aria-label="Timeline de la partie"[^>]*>.*?</div>',re.S)
+          axis_re=re.compile(r'<div class="mono" style="margin:0 0 9px;color:var\(--accent-strong\)">\s*(?:AXE|AXIS)\s+[12]\s*[^<]*</div>',re.I)
+
+          changed=[]
+          for s in slides:
+              if not s.get('study'):
+                  continue
+              for lang in ('_fr','_en'):
+                  h=s.get(lang)
+                  if not h:
+                      continue
+                  before=h.get('content','')
+                  after=timeline_re.sub('',before)
+                  after=axis_re.sub('',after)
+                  if after!=before:
+                      h['content']=after
+                      changed.append(((h.get('title') or s.get('title','')), lang))
+              if s.get('_fr'):
+                  s.update(s['_fr'])
+
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          new_text=text[:st]+new_json+text[st+rel:]
+          assert re.findall(r'<style\b[^>]*>.*?</style>',new_text,flags=re.S|re.I)==styles_before
+          p.write_text(new_text,encoding='utf-8')
+          assert hashlib.sha256(save.read_bytes()).hexdigest()==save_hash
+
+          # Validate that no study slide still contains either element in FR or EN.
+          for s in slides:
+              if not s.get('study'):
+                  continue
+              for lang in ('_fr','_en'):
+                  h=s.get(lang) or {}
+                  c=h.get('content','')
+                  assert 'Timeline de la partie' not in c, (h.get('title'), lang)
+                  assert not axis_re.search(c), (h.get('title'), lang)
+
+          print('Changed study slide variants:', len(changed))
+          for item in changed:
+              print(item)
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',t,flags=re.S|re.I)
+          assert scripts
+          Path('/tmp/csi.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/csi.js
+      - name: Verify frozen backup
+        run: |
+          test "$(git hash-object index_save.html)" = "72cb642016506490fd8b5a88c0161371ee4eea28"
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Remove axis and timeline labels from study slides"
+          git push
