@@ -1,0 +1,32 @@
+name: Check slide count
+on:
+  push:
+    paths:
+      - '.github/workflows/check-slide-count.yml'
+permissions:
+  contents: write
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Count slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          for fn in ('index.html','index_save.html'):
+              text=Path(fn).read_text(encoding='utf-8')
+              marker='const slides = '
+              start=text.index(marker)+len(marker)
+              slides,_=json.JSONDecoder().raw_decode(text[start:])
+              print(f'{fn}: {len(slides)} slides')
+          PY
+      - name: Remove temporary workflow
+        run: |
+          rm .github/workflows/check-slide-count.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/check-slide-count.yml
+          git commit -m "Remove temporary slide count workflow" || true
+          git push
