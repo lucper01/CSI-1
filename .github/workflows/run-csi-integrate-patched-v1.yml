@@ -1,0 +1,52 @@
+name: Run patched CSI integration batch
+on:
+  push:
+    paths:
+      - '.github/workflows/run-csi-integrate-patched-v1.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract, patch and run integration script
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          wf = Path('.github/workflows/csi-integrate-batch-v1.yml').read_text(encoding='utf-8')
+          marker1 = "          cat > /tmp/apply_csi.py <<'PY'\n"
+          marker2 = "\n          PY\n          python /tmp/apply_csi.py"
+          a = wf.index(marker1) + len(marker1)
+          b = wf.index(marker2, a)
+          raw = wf[a:b]
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in raw.splitlines()) + '\n'
+          anchor = "      if s.get('_fr'): s.update(s['_fr'])\n\n  # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.\n"
+          patch = "      if s.get('_fr'): s.update(s['_fr'])\n\n  # Scrub reserved-study names from any remaining metadata or speaker notes on visible slides.\n  def scrub_reserved(obj):\n      if isinstance(obj, dict):\n          return {k: scrub_reserved(v) for k,v in obj.items()}\n      if isinstance(obj, list):\n          return [scrub_reserved(v) for v in obj]\n      if isinstance(obj, str):\n          x = obj.replace('SORBET', '').replace('COBEX', '')\n          x = re.sub(r'\\s+-\\s+-\\s+', ' - ', x)\n          x = re.sub(r',\\s*,', ',', x)\n          return x\n      return obj\n  main[:] = [scrub_reserved(s) for s in main]\n\n  # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.\n"
+          if anchor not in script:
+              raise SystemExit('Patch anchor not found in extracted integration script')
+          script = script.replace(anchor, patch, 1)
+          Path('/tmp/apply_csi.py').write_text(script, encoding='utf-8')
+          PY
+          python /tmp/apply_csi.py
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',t,flags=re.S|re.I)
+          assert scripts
+          Path('/tmp/csi.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/csi.js
+      - name: Verify backup is still frozen
+        run: |
+          test "$(git hash-object index_save.html)" = "72cb642016506490fd8b5a88c0161371ee4eea28"
+      - name: Commit integrated CSI
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets/results/vibex_m1_olivia.svg assets/results/vibex_size_interaction.svg assets/results/vibex_rt_interaction.svg
+          git commit -m "Integrate CSI theory study structure and timeline updates"
+          git push
