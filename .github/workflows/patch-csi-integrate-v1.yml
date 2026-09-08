@@ -14,33 +14,12 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          p=Path('.github/workflows/csi-integrate-batch-v1.yml')
-          t=p.read_text(encoding='utf-8')
-          anchor="""              if s.get('_fr'): s.update(s['_fr'])
-
-          # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.
-"""
-          insert="""              if s.get('_fr'): s.update(s['_fr'])
-
-          # Scrub reserved-study names from any remaining metadata or speaker notes on visible slides.
-          def scrub_reserved(obj):
-              if isinstance(obj, dict):
-                  return {k: scrub_reserved(v) for k,v in obj.items()}
-              if isinstance(obj, list):
-                  return [scrub_reserved(v) for v in obj]
-              if isinstance(obj, str):
-                  x = obj.replace('SORBET', '').replace('COBEX', '')
-                  x = re.sub(r'\s+-\s+-\s+', ' - ', x)
-                  x = re.sub(r',\s*,', ',', x)
-                  return x
-              return obj
-          main[:] = [scrub_reserved(s) for s in main]
-
-          # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.
-"""
+          p = Path('.github/workflows/csi-integrate-batch-v1.yml')
+          t = p.read_text(encoding='utf-8')
+          anchor = "              if s.get('_fr'): s.update(s['_fr'])\n\n          # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.\n"
+          block = "              if s.get('_fr'): s.update(s['_fr'])\n\n          # Scrub reserved-study names from any remaining metadata or speaker notes on visible slides.\n          def scrub_reserved(obj):\n              if isinstance(obj, dict):\n                  return {k: scrub_reserved(v) for k,v in obj.items()}\n              if isinstance(obj, list):\n                  return [scrub_reserved(v) for v in obj]\n              if isinstance(obj, str):\n                  x = obj.replace('SORBET', '').replace('COBEX', '')\n                  x = re.sub(r'\\s+-\\s+-\\s+', ' - ', x)\n                  x = re.sub(r',\\s*,', ',', x)\n                  return x\n              return obj\n          main[:] = [scrub_reserved(s) for s in main]\n\n          # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.\n"
           assert anchor in t
-          t=t.replace(anchor,insert,1)
-          p.write_text(t,encoding='utf-8')
+          p.write_text(t.replace(anchor, block, 1), encoding='utf-8')
           PY
       - name: Commit patch
         run: |
