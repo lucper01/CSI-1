@@ -1,0 +1,227 @@
+name: Add technical difficulties slides
+on:
+  push:
+    paths:
+      - '.github/workflows/add-technical-difficulties-slides.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Insert five technical difficulty slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, hashlib
+
+          path = Path('index.html')
+          save_path = Path('index_save.html')
+          save_before = hashlib.sha256(save_path.read_bytes()).hexdigest()
+          text = path.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          targets = ['TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF']
+          colors = {
+              'TWIXAV':'#0072B2',
+              'VIBEX':'#2f7d5a',
+              'SOFT':'#7652a8',
+              'OASIS':'#b44e6c',
+              'TWIXOLF':'#c36c32',
+          }
+
+          fr = {
+            'TWIXAV': {
+              'section': "Études de l’année 1",
+              'kicker': 'TWIXAV - Retour technique',
+              'title': 'TWIXAV - difficultés techniques et solutions',
+              'lead': "Le principal enjeu a été de faire du timing audiovisuel une variable réellement contrôlée, et pas seulement une valeur programmée.",
+              'items': [
+                ('TIMING ÉCRAN', "Des durées de 50, 150 et 250 ms et des SOA précis sont contraintes par le rafraîchissement réel de l’écran.", "Mesurer le refresh, convertir les durées en nombres entiers de frames et contrôler les événements effectivement présentés."),
+                ('SYNCHRONIE AUDIOVISUELLE', "Les chaînes visuelle et auditive ne se comportent pas exactement de la même manière, alors que le paradigme repose sur leur décalage relatif.", "Ordonner explicitement les onsets, multiplier les prétests et journaliser les événements pour vérifier le SOA réellement produit."),
+                ('ROBUSTESSE', "Un paradigme temporel peut devenir instable si les paramètres d’affichage ou le poste changent entre les sessions.", "Verrouiller les paramètres critiques, contrôler le matériel au lancement et valider le protocole sur des essais pilotes avant la collecte."),
+              ],
+              'take': "Le timing est devenu une propriété mesurée et vérifiée du dispositif, plutôt qu’une hypothèse implicite du code.",
+              'notes': "Insister sur le fait que la difficulté était technique : rendre les durées et les SOA réellement compatibles avec le rafraîchissement écran et vérifier la synchronie audiovisuelle."
+            },
+            'VIBEX': {
+              'section': "Études de l’année 1",
+              'kicker': 'VIBEX - Retour technique',
+              'title': 'VIBEX - difficultés techniques et solutions',
+              'lead': "VIBEX demandait de contrôler simultanément le temps d’exposition, la géométrie des scènes et la synchronisation des différents composants du dispositif.",
+              'items': [
+                ('DURÉE D’AFFICHAGE', "Présenter une scène pendant une durée donnée suppose de tenir compte du rafraîchissement de l’écran, sous peine d’introduire des écarts invisibles dans le protocole.", "Caler les durées sur le refresh réel, raisonner en frames lorsque nécessaire et vérifier les onsets et offsets lors des prétests."),
+                ('TAILLES & CADRAGES', "Les conditions LL, SS, LS et SL et les différentes tailles doivent varier sans créer de différences parasites de résolution, de zoom ou de positionnement.", "Standardiser les stimuli et les gabarits d’affichage, conserver une zone de présentation fixe et vérifier systématiquement les transformations d’image."),
+                ('SYSTÈMES SYNCHRONISÉS', "Plusieurs composants doivent fonctionner ensemble sans dérive entre l’affichage, les réponses et les systèmes de contrôle ou d’acquisition.", "Centraliser le déroulement de l’essai dans PsychoPy, utiliser une horloge commune pour les événements et valider la chaîne complète sur des essais pilotes."),
+              ],
+              'take': "Le paradigme visuel a ainsi été suffisamment stabilisé pour devenir une base technique réutilisable dans OASIS.",
+              'notes': "Mettre en avant le timing écran, le contrôle des tailles/cadrages et la coexistence de plusieurs systèmes synchronisés."
+            },
+            'SOFT': {
+              'section': "Deuxième année",
+              'kicker': 'SOFT - Développement technique',
+              'title': 'SOFT - difficultés techniques et solutions',
+              'lead': "SOFT concentre le verrou instrumental le plus important : faire fonctionner plusieurs modalités et plusieurs matériels sur une même chronologie expérimentale.",
+              'items': [
+                ('AFFICHAGE & TIMING', "Le plein écran et le double écran sont instables sur l’environnement Windows 7 / PsychoPy utilisé, et les durées visuelles dépendent du refresh réel.", "Passer en fenêtre quasi plein écran, mesurer le refresh à chaque lancement et convertir les durées visuelles en frames avec journalisation des durées réellement obtenues."),
+                ('COEXISTENCE MATÉRIELLE', "PsychoPy doit piloter ou écouter simultanément Sniffo, Spir0, BIOPAC et l’EEG, avec des interfaces et contraintes différentes.", "Construire une architecture modulaire où chaque matériel peut être activé ou désactivé, avec états visibles, initialisation contrôlée et journalisation centralisée."),
+                ('RESPIRATION & TRIGGERS', "L’odeur doit être déclenchée sur l’inspiration, tout en respectant la polarité du Spir0 et la limite 8 bits des triggers EEG.", "Utiliser le front correspondant à l’inspiration comme événement de référence, tester la polarité au démarrage et adopter une cartographie de triggers inférieure à 255."),
+              ],
+              'take': "La solution a été de transformer plusieurs appareils indépendants en une seule chaîne expérimentale pilotée et observable.",
+              'notes': "Citer le passage au mode fenêtré, la mesure du refresh, la modularisation Sniffo/Spir0/BIOPAC/EEG et l’alignement olfactif sur l’inspiration."
+            },
+            'OASIS': {
+              'section': "Deuxième année",
+              'kicker': 'OASIS - Développement technique',
+              'title': 'OASIS - difficultés techniques et solutions',
+              'lead': "Le défi est d’ajouter l’olfaction au paradigme VIBEX sans perdre le contrôle temporel et visuel déjà obtenu.",
+              'items': [
+                ('VISION + OLFACTION', "La délivrance d’une odeur ne doit ni perturber la durée d’affichage des scènes ni modifier le déroulement des conditions visuelles héritées de VIBEX.", "Conserver le cœur visuel stabilisé de VIBEX et traiter la délivrance olfactive comme un module séparé mais appelé par la même logique d’essai."),
+                ('SYSTÈMES SYNCHRONISÉS', "Le paradigme doit faire coexister affichage, olfactométrie, détection respiratoire et systèmes d’acquisition sur une chronologie commune.", "Réutiliser l’architecture modulaire développée pour SOFT, centraliser les timestamps et déclencher les événements olfactifs à partir d’un état respiratoire explicitement détecté."),
+                ('FLUSH & CARRY-OVER', "Une odeur peut persister entre deux essais et contaminer la condition suivante si les flux ne sont pas maîtrisés.", "Introduire calibration, tests de flux, purge/flush et fenêtres inter-essais suffisantes avant de lancer une nouvelle stimulation."),
+              ],
+              'take': "OASIS bénéficie directement des deux briques techniques déjà stabilisées : VIBEX pour le visuel et SOFT pour l’intégration olfactométrique.",
+              'notes': "Présenter OASIS comme un problème d’intégration de systèmes : préserver VIBEX tout en ajoutant olfactomètre, respiration et acquisition synchronisés."
+            },
+            'TWIXOLF': {
+              'section': "Deuxième année",
+              'kicker': 'TWIXOLF - Développement technique',
+              'title': 'TWIXOLF - difficultés techniques et solutions',
+              'lead': "La difficulté centrale est de transformer une stimulation olfactive physiologiquement dépendante du sniff en un événement temporel suffisamment défini pour construire des SOA.",
+              'items': [
+                ('ONSET OLFACTIF', "L’ordre d’ouverture d’une voie olfactive n’est pas équivalent à l’arrivée perceptive de l’odeur : le transport et l’inspiration introduisent une latence propre.", "Utiliser l’inspiration détectée comme ancre temporelle, calibrer le flux et journaliser séparément commande, déclenchement et événements respiratoires."),
+                ('SOA INTERMODAL', "Construire une fenêtre temporelle avec l’olfaction exige que le décalage avec l’autre modalité soit défini à partir d’un repère réellement reproductible.", "Fonder le SOA sur une chronologie commune et sur l’événement respiratoire, puis valider les délais instrumentaux avant la collecte principale."),
+                ('PURGE & RÉPÉTITION', "Le résiduel olfactif et l’adaptation rendent les essais successifs moins indépendants qu’en vision ou en audition.", "Prévoir purge/flush, contrôle des flux et intervalles inter-essais adaptés afin de repartir d’un état aussi stable que possible."),
+              ],
+              'take': "L’objectif technique est de rendre l’odeur horodatable et répétable avant de lui appliquer la logique de fenêtre temporelle de TWIXAV.",
+              'notes': "Insister sur la différence entre commande de l’olfactomètre et onset réellement exploitable, le rôle du sniff, puis purge et calibration."
+            }
+          }
+
+          en = {
+            'TWIXAV': {
+              'section': 'Year 1 studies', 'kicker':'TWIXAV - Technical feedback', 'title':'TWIXAV - technical difficulties and solutions',
+              'lead':'The main challenge was to make audiovisual timing genuinely controlled rather than merely programmed.',
+              'items':[
+                ('DISPLAY TIMING','Durations of 50, 150 and 250 ms and precise SOAs are constrained by the actual screen refresh rate.','Measure refresh rate, convert durations into integer frame counts and check the events actually presented.'),
+                ('AUDIOVISUAL SYNCHRONY','Visual and auditory presentation chains do not behave identically, although the paradigm depends on their relative delay.','Explicitly schedule onsets, run repeated pre-tests and log events to verify the SOA actually produced.'),
+                ('ROBUSTNESS','A temporal paradigm can become unstable when display or workstation parameters change across sessions.','Lock critical parameters, check hardware at launch and validate the protocol with pilot trials before data collection.')],
+              'take':'Timing became a measured and verified property of the setup rather than an implicit assumption of the code.',
+              'notes':'Emphasize the technical issue: making durations and SOAs compatible with the actual refresh rate and verifying audiovisual synchrony.'
+            },
+            'VIBEX': {
+              'section':'Year 1 studies','kicker':'VIBEX - Technical feedback','title':'VIBEX - technical difficulties and solutions',
+              'lead':'VIBEX required simultaneous control of exposure duration, scene geometry and synchronization across the different components of the setup.',
+              'items':[
+                ('DISPLAY DURATION','Presenting a scene for a specified duration requires accounting for screen refresh to avoid hidden timing deviations.','Align durations with the measured refresh rate, use frame-based timing when needed and check onsets and offsets during pre-tests.'),
+                ('SIZES & CROPS','LL, SS, LS and SL conditions and different image sizes must vary without introducing unwanted differences in resolution, zoom or position.','Standardize stimuli and display templates, keep a fixed presentation area and systematically verify image transformations.'),
+                ('SYNCHRONIZED SYSTEMS','Several components must operate together without drift between display, responses and control or acquisition systems.','Centralize trial execution in PsychoPy, use a common event clock and validate the full chain with pilot trials.')],
+              'take':'The visual paradigm was stabilized enough to become a reusable technical basis for OASIS.',
+              'notes':'Highlight display timing, control of image size/cropping and synchronization across multiple systems.'
+            },
+            'SOFT': {
+              'section':'Year 2','kicker':'SOFT - Technical development','title':'SOFT - technical difficulties and solutions',
+              'lead':'SOFT concentrates the main instrumentation challenge: running several modalities and hardware systems on a single experimental timeline.',
+              'items':[
+                ('DISPLAY & TIMING','Fullscreen and dual-screen behavior are unstable in the Windows 7 / PsychoPy environment, while visual durations depend on the actual refresh rate.','Use a near-fullscreen windowed mode, measure refresh at launch and convert visual durations to frames while logging achieved durations.'),
+                ('HARDWARE COEXISTENCE','PsychoPy must simultaneously control or listen to Sniffo, Spir0, BIOPAC and EEG, each with different interfaces and constraints.','Build a modular architecture in which each device can be enabled or disabled, with visible states, controlled initialization and centralized logging.'),
+                ('RESPIRATION & TRIGGERS','Odor delivery must be aligned to inhalation while respecting Spir0 polarity and the 8-bit EEG trigger limit.','Use the inhalation edge as the reference event, test polarity at startup and keep the trigger map below 255.')],
+              'take':'The solution was to turn several independent devices into one controlled and observable experimental chain.',
+              'notes':'Mention windowed mode, measured refresh rate, Sniffo/Spir0/BIOPAC/EEG modularization and odor alignment to inhalation.'
+            },
+            'OASIS': {
+              'section':'Year 2','kicker':'OASIS - Technical development','title':'OASIS - technical difficulties and solutions',
+              'lead':'The challenge is to add olfaction to VIBEX without losing the temporal and visual control already achieved.',
+              'items':[
+                ('VISION + OLFACTION','Odor delivery must not disturb scene exposure duration or the visual conditions inherited from VIBEX.','Keep the stabilized VIBEX visual core and handle odor delivery as a separate module called by the same trial logic.'),
+                ('SYNCHRONIZED SYSTEMS','The paradigm must combine display, olfactometry, respiratory detection and acquisition systems on a common timeline.','Reuse the modular architecture developed for SOFT, centralize timestamps and trigger olfactory events from an explicitly detected respiratory state.'),
+                ('FLUSH & CARRY-OVER','Odor can persist between trials and contaminate the next condition if airflow is not controlled.','Use calibration, flow checks, purge/flush procedures and sufficient inter-trial windows before a new stimulation.')],
+              'take':'OASIS directly benefits from two stabilized technical building blocks: VIBEX for vision and SOFT for olfactometer integration.',
+              'notes':'Present OASIS as a systems-integration problem: preserve VIBEX while adding synchronized olfactometer, respiration and acquisition.'
+            },
+            'TWIXOLF': {
+              'section':'Year 2','kicker':'TWIXOLF - Technical development','title':'TWIXOLF - technical difficulties and solutions',
+              'lead':'The central difficulty is turning sniff-dependent olfactory stimulation into a sufficiently well-defined temporal event for constructing SOAs.',
+              'items':[
+                ('OLFACTORY ONSET','Opening an olfactory channel is not equivalent to perceptual odor arrival: transport and inhalation add their own latency.','Use detected inhalation as the temporal anchor, calibrate flow and separately log command, trigger and respiratory events.'),
+                ('CROSSMODAL SOA','Building a temporal window with olfaction requires delays relative to the other modality to be defined from a reproducible reference.','Base SOA on a common timeline and the respiratory event, then validate instrumental delays before the main data collection.'),
+                ('PURGE & REPETITION','Residual odor and adaptation make successive trials less independent than in vision or audition.','Use purge/flush procedures, flow control and appropriate inter-trial intervals to return to the most stable possible baseline.')],
+              'take':'The technical goal is to make odor timestampable and repeatable before applying the TWIXAV temporal-window logic.',
+              'notes':'Emphasize the difference between olfactometer command and usable onset, the role of sniffing, and then purge and calibration.'
+            }
+          }
+
+          def build_content(cfg, color, solution_label, take_label):
+              cards=[]
+              for n,(head,diff,sol) in enumerate(cfg['items'],1):
+                  cards.append(f'''<article class="card" style="border-top:4px solid {color}"><div class="mono" style="color:{color}">VERROU {n}</div><h3>{head}</h3><p><strong>Difficulté.</strong> {diff}</p><div style="margin-top:12px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,{color} 10%,var(--white));border:1px solid color-mix(in srgb,{color} 24%,var(--line))"><strong style="color:{color}">{solution_label}</strong><br>{sol}</div></article>''')
+              return '<div class="grid three" style="margin-top:8px">'+''.join(cards)+f'''</div><div class="callout" style="margin-top:16px;box-shadow:inset 4px 0 0 {color}"><strong>{take_label}</strong> {cfg['take']}</div>'''
+
+          def make_slide(study):
+              color=colors[study]
+              f=fr[study]; e=en[study]
+              fr_obj={
+                  'section':f['section'],'kicker':f['kicker'],'title':f['title'],'lead':f['lead'],
+                  'content':build_content(f,color,'Réponse mise en place','Ce que cela a permis :'),'notes':f['notes']}
+              en_obj={
+                  'section':e['section'],'kicker':e['kicker'],'title':e['title'],'lead':e['lead'],
+                  'content':build_content(e,color,'Implemented response','What this enabled:'),'notes':e['notes']}
+              out={'chapter':f['section'],'study':study,'appendix':False,'_fr':fr_obj,'_en':en_obj}
+              out.update(fr_obj)
+              return out
+
+          # Prevent accidental duplication.
+          for s in slides:
+              if 'difficultés techniques et solutions' in s.get('title',''):
+                  raise SystemExit('Technical difficulty slides already present; aborting to avoid duplicates.')
+
+          last={}
+          for i,s in enumerate(slides):
+              st=s.get('study','')
+              if st in targets:
+                  last[st]=i
+          missing=[t for t in targets if t not in last]
+          if missing:
+              raise SystemExit(f'Missing study blocks: {missing}')
+
+          old_count=len(slides)
+          rebuilt=[]
+          inserted=[]
+          index_to_study={idx:st for st,idx in last.items()}
+          for i,s in enumerate(slides):
+              rebuilt.append(s)
+              if i in index_to_study:
+                  st=index_to_study[i]
+                  rebuilt.append(make_slide(st))
+                  inserted.append(st)
+          slides=rebuilt
+          assert len(slides)==old_count+5, (old_count,len(slides))
+          assert set(inserted)==set(targets), inserted
+
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          text=text[:start]+new_json+text[end:]
+          path.write_text(text,encoding='utf-8')
+
+          save_after=hashlib.sha256(save_path.read_bytes()).hexdigest()
+          assert save_before==save_after, 'index_save.html changed unexpectedly'
+          print('Inserted:', ', '.join(inserted))
+          print('Slide count:', old_count, '->', len(slides))
+          for i,s in enumerate(slides,1):
+              if 'difficultés techniques et solutions' in s.get('title',''):
+                  print(i, s.get('study'), s.get('title'))
+          PY
+          git diff --exit-code -- index_save.html
+      - name: Commit changes and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add technical difficulty slides for five studies"
+          rm .github/workflows/add-technical-difficulties-slides.yml
+          git add .github/workflows/add-technical-difficulties-slides.yml
+          git commit -m "Remove temporary technical slides workflow"
+          git push
