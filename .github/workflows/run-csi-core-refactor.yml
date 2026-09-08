@@ -10,31 +10,162 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run structural refactor
+      - name: Run structural refactor safely
         run: |
           set -e
           BEFORE=$(sha256sum index_save.html | awk '{print $1}')
-          python tools_temp/csi_refactor_core_20260908.py
-          AFTER=$(sha256sum index_save.html | awk '{print $1}')
-          test "$BEFORE" = "$AFTER"
           python - <<'PY'
           from pathlib import Path
-          import json
-          text=Path('index.html').read_text(encoding='utf-8')
+          src=Path('tools_temp/csi_refactor_core_20260908.py').read_text(encoding='utf-8')
+          css_block="""if '/* CSI-STRUCTURAL-REFACTOR-20260908 */' not in text:\n    text = text.replace('</style>', css + '\\n</style>', 1)"""
+          js_block="""if 'id=\"csiVibexManualDemo\"' not in text:\n    text = text.replace('</body>', js + '\\n</body>', 1)"""
+          src=src.replace(css_block, "pass  # CSS injected after slide JSON replacement")
+          src=src.replace(js_block, "pass  # JS injected after slide JSON replacement")
+          needle="text = text[:start] + new_json + text[end:]"
+          replacement="""text = text[:start] + new_json + text[end:]\nif '/* CSI-STRUCTURAL-REFACTOR-20260908 */' not in text:\n    text = text.replace('</style>', css + '\\n</style>', 1)\nif 'id=\"csiVibexManualDemo\"' not in text:\n    text = text.replace('</body>', js + '\\n</body>', 1)"""
+          if needle not in src:
+              raise RuntimeError('Core replacement anchor missing')
+          src=src.replace(needle,replacement,1)
+          ns={'__name__':'__main__','__file__':'tools_temp/csi_refactor_core_20260908.py'}
+          exec(compile(src,'tools_temp/csi_refactor_core_20260908.py','exec'),ns,ns)
+          PY
+          AFTER=$(sha256sum index_save.html | awk '{print $1}')
+          test "$BEFORE" = "$AFTER"
+      - name: Add DOCC logo and harmonize VIBEX figures
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,re,html
+
+          p=Path('index.html')
+          text=p.read_text(encoding='utf-8')
           marker='const slides = '
           st=text.index(marker)+len(marker)
-          slides,_=json.JSONDecoder().raw_decode(text[st:])
-          print('TOTAL',len(slides),'MAIN',sum(not s.get('appendix') for s in slides),'APP',sum(bool(s.get('appendix')) for s in slides))
-          for i,s in enumerate(slides,1):
-              print(f"{i:02d}|{'APP' if s.get('appendix') else 'MAIN'}|{s.get('study','')}|{s.get('title','')}")
+          slides,rel=json.JSONDecoder().raw_decode(text[st:])
+          en=st+rel
+
+          # Cover: real DOCC asset uploaded to the repository.
+          cover=slides[0]
+          def add_docc(c):
+              if 'assets/logos/logo_docc.png' in c:
+                  return c
+              pat=re.compile(r'(<div class="v16-logo-cloud"[^>]*>)(.*?)(</div>)',re.S)
+              m=pat.search(c)
+              if not m:
+                  return c
+              img='<img src="assets/logos/logo_docc.png" alt="DOCC Lab">'
+              return c[:m.start()]+m.group(1)+m.group(2)+img+m.group(3)+c[m.end():]
+          for h in [cover,cover.get('_fr') or {},cover.get('_en') or {}]:
+              if h.get('content'):
+                  h['content']=add_docc(h['content'])
+
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          text=text[:st]+new_json+text[en:]
+          p.write_text(text,encoding='utf-8')
+
+          out=Path('assets/results')
+          out.mkdir(parents=True,exist_ok=True)
+
+          FONT='Arial,Helvetica,sans-serif'
+          def esc(x): return html.escape(str(x),quote=True)
+          def facet_svg(title, facets, ylabel, ymin, ymax, errors=None, suffix='', note=''):
+              W,H=960,520; L=64; R=24; T=62; B=70; gap=18
+              panel_w=(W-L-R-gap*2)/3
+              plot_top=T+38; plot_bottom=H-B; ph=plot_bottom-plot_top
+              colors=['#173f5f','#6d8b7a','#2f7d5a','#9bbcaf']
+              labels=['LL','SS','SL','LS']
+              def Y(v): return plot_top+(ymax-v)/(ymax-ymin)*ph
+              s=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}"><rect width="100%" height="100%" rx="24" fill="#fff"/><text x="{L}" y="31" font-family="{FONT}" font-size="21" font-weight="700" fill="#173f32">{esc(title)}</text>']
+              ticks=5
+              for pi,(facet,vals) in enumerate(facets):
+                  x0=L+pi*(panel_w+gap)
+                  s.append(f'<rect x="{x0:.1f}" y="{T:.1f}" width="{panel_w:.1f}" height="{plot_bottom-T:.1f}" rx="17" fill="#fbfcfb" stroke="#dfe7e3"/>')
+                  s.append(f'<text x="{x0+panel_w/2:.1f}" y="{T+23}" text-anchor="middle" font-family="{FONT}" font-size="16" font-weight="800" fill="#26342d">{esc(facet)}</text>')
+                  for ti in range(ticks):
+                      v=ymin+(ymax-ymin)*ti/(ticks-1); y=Y(v)
+                      s.append(f'<line x1="{x0+34:.1f}" y1="{y:.1f}" x2="{x0+panel_w-12:.1f}" y2="{y:.1f}" stroke="#e7ece9"/>')
+                      if pi==0:
+                          lab=f'{v:.0f}{suffix}'
+                          s.append(f'<text x="{x0+28:.1f}" y="{y+5:.1f}" text-anchor="end" font-family="{FONT}" font-size="12" fill="#65736c">{lab}</text>')
+                  px0=x0+50; pw=panel_w-74
+                  pts=[]
+                  for j,v in enumerate(vals):
+                      x=px0+pw*j/3; y=Y(v); pts.append((x,y))
+                      if errors:
+                          lo,hi=errors[pi][j]; ylo=Y(lo); yhi=Y(hi)
+                          s.append(f'<line x1="{x:.1f}" y1="{yhi:.1f}" x2="{x:.1f}" y2="{ylo:.1f}" stroke="{colors[j]}" stroke-width="2"/><line x1="{x-5:.1f}" y1="{yhi:.1f}" x2="{x+5:.1f}" y2="{yhi:.1f}" stroke="{colors[j]}" stroke-width="2"/><line x1="{x-5:.1f}" y1="{ylo:.1f}" x2="{x+5:.1f}" y2="{ylo:.1f}" stroke="{colors[j]}" stroke-width="2"/>')
+                      s.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5.5" fill="#fff" stroke="{colors[j]}" stroke-width="3"/><text x="{x:.1f}" y="{plot_bottom+24}" text-anchor="middle" font-family="{FONT}" font-size="13" font-weight="700" fill="#34443c">{labels[j]}</text>')
+                  s.append('<polyline points="'+' '.join(f'{x:.1f},{y:.1f}' for x,y in pts)+'" fill="none" stroke="#6f7d76" stroke-width="1.6" opacity=".45"/>')
+                  # pairing cues
+                  yb=T+32
+                  for a,b,col in [(0,1,'#6d8b7a'),(2,3,'#2f7d5a')]:
+                      xa=pts[a][0]; xb=pts[b][0]
+                      s.append(f'<line x1="{xa:.1f}" y1="{yb:.1f}" x2="{xb:.1f}" y2="{yb:.1f}" stroke="{col}" stroke-width="3" stroke-linecap="round"/>')
+              s.append(f'<text x="19" y="{(plot_top+plot_bottom)/2:.1f}" transform="rotate(-90 19 {(plot_top+plot_bottom)/2:.1f})" text-anchor="middle" font-family="{FONT}" font-size="15" fill="#405149">{esc(ylabel)}</text>')
+              if note:
+                  s.append(f'<text x="{W/2:.1f}" y="{H-17}" text-anchor="middle" font-family="{FONT}" font-size="12" fill="#69776f">{esc(note)}</text>')
+              s.append('</svg>')
+              return ''.join(s)
+
+          resp=[('Petite',[79.4,68.4,58.4,27.8]),('Moyenne',[77.5,77.6,50.5,25.2]),('Grande',[79.5,77.9,47.1,32.3])]
+          resp_ci=[[(74.3,84.5),(60.4,76.4),(49.7,67.2),(19.9,35.7)],[(71.6,83.5),(72.6,82.7),(41.1,59.9),(18.6,31.7)],[(73.4,85.6),(71.0,84.9),(39.4,54.8),(23.7,40.8)]]
+          (out/'vibex_size_interaction.svg').write_text(facet_svg('VIBEX - condition × taille de l’image',resp,'Réponses « identique » (%)',0,100,resp_ci,'','IC95 - mêmes axes et ordre LL · SS · SL · LS'),encoding='utf-8')
+
+          rt=[('Petite',[821,850,842,789]),('Moyenne',[838,808,848,811]),('Grande',[803,804,821,807])]
+          (out/'vibex_rt_interaction.svg').write_text(facet_svg('VIBEX - temps de réaction par condition et taille',rt,'Temps de réaction (ms)',740,900,None,'','Intervalles par taille non disponibles dans l’asset source - aucune barre inventée'),encoding='utf-8')
+
+          # Aggregated condition plot, with existing error bars retained and pair relations emphasized.
+          vals=[78.8,74.7,52.0,28.4]
+          ci=[(73.9,83.8),(68.7,80.6),(44.4,59.6),(21.4,35.4)]
+          W,H=900,520; L,R,T,B=92,35,70,72; pw=W-L-R; ph=H-T-B
+          def Y(v): return T+(100-v)/100*ph
+          xs=[190,355,565,730]; cols=['#173f5f','#6d8b7a','#2f7d5a','#9bbcaf']; labs=['LL','SS','SL','LS']
+          z=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}"><rect width="100%" height="100%" rx="24" fill="#fff"/><text x="{L}" y="34" font-family="{FONT}" font-size="21" font-weight="700" fill="#173f32">VIBEX - réponses « identique » selon la condition</text>']
+          for v in [0,20,40,60,80,100]:
+              y=Y(v); z.append(f'<line x1="{L}" y1="{y:.1f}" x2="{W-R}" y2="{y:.1f}" stroke="#e7ece9"/><text x="{L-12}" y="{y+5:.1f}" text-anchor="end" font-family="{FONT}" font-size="13" fill="#65736c">{v}</text>')
+          for x,v,(lo,hi),col,lab in zip(xs,vals,ci,cols,labs):
+              y=Y(v); ylo=Y(lo); yhi=Y(hi)
+              z.append(f'<line x1="{x}" y1="{yhi:.1f}" x2="{x}" y2="{ylo:.1f}" stroke="{col}" stroke-width="3"/><line x1="{x-8}" y1="{yhi:.1f}" x2="{x+8}" y2="{yhi:.1f}" stroke="{col}" stroke-width="3"/><line x1="{x-8}" y1="{ylo:.1f}" x2="{x+8}" y2="{ylo:.1f}" stroke="{col}" stroke-width="3"/><circle cx="{x}" cy="{y:.1f}" r="8" fill="#fff" stroke="{col}" stroke-width="4"/><text x="{x}" y="{H-B+29}" text-anchor="middle" font-family="{FONT}" font-size="17" font-weight="800" fill="#26342d">{lab}</text>')
+          # Pair brackets outside error bars.
+          for xa,xb,y,col,txt in [(xs[0],xs[1],54,'#6d8b7a','LL ↔ SS · n.s.'),(xs[2],xs[3],54,'#2f7d5a','SL > LS · p < .001')]:
+              z.append(f'<line x1="{xa}" y1="{y}" x2="{xb}" y2="{y}" stroke="{col}" stroke-width="4" stroke-linecap="round"/><text x="{(xa+xb)/2}" y="{y-9}" text-anchor="middle" font-family="{FONT}" font-size="14" font-weight="700" fill="{col}">{esc(txt)}</text>')
+          z.append(f'<line x1="{L}" y1="{H-B}" x2="{W-R}" y2="{H-B}" stroke="#405149" stroke-width="2"/><line x1="{L}" y1="{T}" x2="{L}" y2="{H-B}" stroke="#405149" stroke-width="2"/><text x="24" y="{(T+H-B)/2}" transform="rotate(-90 24 {(T+H-B)/2})" text-anchor="middle" font-family="{FONT}" font-size="15" fill="#405149">Réponses « identique » (%)</text></svg>')
+          (out/'vibex_conditions.svg').write_text(''.join(z),encoding='utf-8')
           PY
-      - name: Commit refactor
+      - name: Audit and commit refactor
         run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+          import json,re,hashlib
+          text=Path('index.html').read_text(encoding='utf-8')
+          save=Path('index_save.html').read_text(encoding='utf-8')
+          marker='const slides = '; st=text.index(marker)+len(marker); slides,_=json.JSONDecoder().raw_decode(text[st:])
+          main=[s for s in slides if not s.get('appendix')]; app=[s for s in slides if s.get('appendix')]
+          print('TOTAL',len(slides),'MAIN',len(main),'APP',len(app))
+          assert len(slides)==64 and len(main)==60 and len(app)==4
+          assert 'assets/logos/logo_docc.png' in slides[0]['content']
+          assert 'Arnaud Leleu' in slides[0]['content'] and 'HDR' in slides[0]['content']
+          assert 'Less space, less time' in text
+          assert 'data-vibex-next' in text and 'assets/demo/Masque_SCR.webp' in text
+          assert 'NOUS SOMMES ICI' in text and 'Expérimentarium 2027' in text and 'ISOT 2028' in text
+          assert 'mouvement oculaire maîtrisé' in text
+          assert '—' not in text and '–' not in text
+          assert all('COBEX' not in (s.get('title','')+s.get('content','')) and 'SORBET' not in (s.get('title','')+s.get('content','')) for s in main)
+          assert any(s.get('study')=='SOLAR' and 'Axe 1' in (s.get('kicker','')+s.get('content','')) for s in main)
+          assert save==Path('index_save.html').read_text(encoding='utf-8')
+          # apparatus buttons remain wired through existing runtime
+          assert 'apparatusPopupScript' in text and text.count('apparatus-open')>=5
+          # rough HTML/JS markers
+          assert text.count('<script')==text.count('</script>') and text.count('<style')==text.count('</style>')
+          print('Backup SHA256',hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest())
+          for i,s in enumerate(slides,1): print(f"{i:02d}|{'APP' if s.get('appendix') else 'MAIN'}|{s.get('study','')}|{s.get('title','')}")
+          PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Refactor CSI narrative and structure"
-          rm .github/workflows/run-csi-core-refactor.yml
-          git add .github/workflows/run-csi-core-refactor.yml
-          git commit -m "Remove temporary CSI core refactor workflow"
+          git add index.html assets/results/vibex_conditions.svg assets/results/vibex_size_interaction.svg assets/results/vibex_rt_interaction.svg
+          git commit -m "Refactor CSI narrative figures and planning"
+          rm .github/workflows/run-csi-core-refactor.yml tools_temp/csi_refactor_core_20260908.py
+          git add .github/workflows/run-csi-core-refactor.yml tools_temp/csi_refactor_core_20260908.py
+          git commit -m "Remove temporary CSI refactor tools"
           git push
