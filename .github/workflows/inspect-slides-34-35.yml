@@ -1,0 +1,32 @@
+name: Inspect slides 34 35
+on:
+  push:
+    branches: [main]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print slides 34 and 35
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          text = Path('index.html').read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, _ = json.JSONDecoder().raw_decode(text[start:])
+          for i in (33, 34):
+              print(f'===== SLIDE {i+1} =====')
+              print(json.dumps(slides[i], ensure_ascii=False, indent=2))
+          PY
+      - name: Remove temporary workflow
+        run: |
+          rm .github/workflows/inspect-slides-34-35.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/inspect-slides-34-35.yml
+          git commit -m "Remove temporary slide inspection workflow" || true
+          git push
