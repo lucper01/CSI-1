@@ -1,0 +1,34 @@
+name: Inspect planning details
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-planning-details.yml'
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print planning slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          text=Path('index.html').read_text(encoding='utf-8')
+          m='const slides = '; st=text.index(m)+len(m); slides,_=json.JSONDecoder().raw_decode(text[st:])
+          for n in [34,35,36,49,50,58,59,60,61]:
+              s=slides[n-1]
+              print('\n===== SLIDE',n,'=====',s.get('title'))
+              print('LEAD:',s.get('lead',''))
+              print('CONTENT:',s.get('content',''))
+              print('NOTES:',s.get('notes',''))
+          PY
+      - name: Cleanup
+        run: |
+          rm .github/workflows/inspect-planning-details.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/inspect-planning-details.yml
+          git commit -m "Remove temporary planning inspection" || true
+          git push
