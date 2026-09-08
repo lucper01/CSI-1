@@ -1,0 +1,111 @@
+name: Polish integrated CSI content
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-polish-integrated-v1.yml'
+permissions:
+  contents: write
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Polish visible study content only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re, hashlib
+
+          p=Path('index.html')
+          save=Path('index_save.html')
+          save_hash=hashlib.sha256(save.read_bytes()).hexdigest()
+          text=p.read_text(encoding='utf-8')
+          styles_before=re.findall(r'<style\b[^>]*>.*?</style>',text,flags=re.S|re.I)
+          marker='const slides = '
+          st=text.index(marker)+len(marker)
+          slides, rel=json.JSONDecoder().raw_decode(text[st:])
+
+          def prefix(content):
+              m=re.match(r'(<div aria-label="Timeline de la partie".*?</div>)(<div class="mono" style="margin:0 0 9px;color:var\(--accent-strong\)">.*?</div>)?', content, flags=re.S)
+              return m.group(0) if m else ''
+
+          def card(label,title,body,dark=False):
+              return f'<div class="card{" dark" if dark else ""}"><div class="mono">{label}</div><h3>{title}</h3><p>{body}</p></div>'
+
+          # Replace inherited technical content on SOFT and OASIS introductions.
+          for s in slides:
+              study=s.get('study','')
+              fr=s.get('_fr') or {}
+              en=s.get('_en') or {}
+              title=fr.get('title','')
+              if study=='SOFT' and 'comprendre la différence' in title:
+                  fr['content']=prefix(fr.get('content','')) + '<div class="grid three">' + card('QUESTION','Pourquoi les modalités diffèrent-elles ?','Une fenêtre temporelle globale ne permet pas de savoir si la différence vient du début perçu, de la fin perçue ou de la durée elle-même.') + card('COMPARAISON','Audition - vision - olfaction','SOFT compare les mêmes composantes temporelles dans les trois modalités pour identifier leurs limites respectives.') + card('ENJEU','Expliquer les fenêtres temporelles','L’objectif est de relier les différences observées dans les jugements de synchronie à des composantes perceptives plus élémentaires.',True) + '</div>'
+                  en['content']=prefix(en.get('content','')) + '<div class="grid three">' + card('QUESTION','Why do modalities differ?','A global temporal window cannot reveal whether a difference originates from perceived onset, perceived offset or duration itself.') + card('COMPARISON','Audition - vision - olfaction','SOFT compares the same temporal components across the three modalities to identify their respective limits.') + card('GOAL','Explain temporal windows','The aim is to relate differences in synchrony judgments to more elementary perceptual components.',True) + '</div>'
+                  fr['notes']='Introduire SOFT comme la décomposition mécanistique nécessaire après TWIXAV, sans détailler ici l’appareillage ou les mesures physiologiques.'
+                  en['notes']='Introduce SOFT as the mechanistic decomposition needed after TWIXAV, without detailing apparatus or physiological measures.'
+              elif study=='OASIS' and 'ajouter l’olfaction' in title:
+                  fr['content']=prefix(fr.get('content','')) + '<div class="grid three">' + card('RÉFÉRENCE','Partir de VIBEX','Le fonctionnement du paradigme visuel et l’influence de la taille sont caractérisés avant d’introduire l’olfaction.') + card('MANIPULATION','Ajouter un contexte olfactif','La structure visuelle de la tâche reste la même afin d’isoler ce que change la présence d’une odeur dans la représentation de la scène.') + card('QUESTION','L’espace mémorisé change-t-il ?','OASIS teste directement si l’olfaction peut modifier la représentation spatiale des limites d’une scène.',True) + '</div>'
+                  en['content']=prefix(en.get('content','')) + '<div class="grid three">' + card('REFERENCE','Start from VIBEX','The visual paradigm and the influence of image size are characterized before olfaction is introduced.') + card('MANIPULATION','Add olfactory context','The visual structure of the task remains unchanged so that the contribution of odor to scene representation can be isolated.') + card('QUESTION','Does remembered space change?','OASIS directly tests whether olfaction can modify the spatial representation of scene boundaries.',True) + '</div>'
+                  fr['notes']='Présenter OASIS comme la transposition olfactive de la question spatiale, sans détailler les mesures secondaires.'
+                  en['notes']='Present OASIS as the olfactory extension of the spatial question, without detailing secondary measures.'
+              elif study=='FLUXOLF':
+                  fr['content']=prefix(fr.get('content','')) + '<div class="grid three">' + card('PROJET ANNEXE','Musique + odeur','Étudier comment deux contextes sensoriels complexes interagissent lorsqu’ils sont présentés séparément ou ensemble.') + card('OBJECTIF','Comprendre leur interaction','Comparer les effets propres de la musique et de l’odeur à leur combinaison afin de caractériser une éventuelle interaction intermodale.') + card('PLACE DANS LA THÈSE','Un projet parallèle','FLUXOLF développe des compétences expérimentales utiles mais reste distinct de la trajectoire principale STOLF.',True) + '</div>'
+                  en['content']=prefix(en.get('content','')) + '<div class="grid three">' + card('SIDE PROJECT','Music + odor','Study how two complex sensory contexts interact when presented separately or together.') + card('GOAL','Understand their interaction','Compare the separate effects of music and odor with their combination to characterize a potential crossmodal interaction.') + card('ROLE IN THE PHD','A parallel project','FLUXOLF develops useful experimental skills while remaining separate from the main STOLF trajectory.',True) + '</div>'
+                  fr['notes']='Rester très synthétique : projet annexe, sans détailler les capteurs ou les pipelines.'
+                  en['notes']='Keep this concise: a side project, without detailing sensors or pipelines.'
+              s['_fr']=fr; s['_en']=en
+              if fr: s.update(fr)
+
+          # Clean a speaker-note residue created when reserved studies were removed.
+          for s in slides:
+              for lang in ('_fr','_en'):
+                  h=s.get(lang) or {}
+                  n=h.get('notes','')
+                  n=n.replace('OASIS et .','OASIS.').replace('OASIS and  later.','OASIS later.')
+                  h['notes']=n
+              if s.get('_fr'): s.update(s['_fr'])
+
+          # Move the synthetic Year 2 difficulties slide to the actual end of Year 2, just before Perspectives.
+          idx_diff=next(i for i,s in enumerate(slides) if (s.get('_fr') or {}).get('title')=='Difficultés - Année 2')
+          diff=slides.pop(idx_diff)
+          idx_persp=next(i for i,s in enumerate(slides) if s.get('divider') and (s.get('_fr') or {}).get('title')=='Perspectives')
+          slides.insert(idx_persp,diff)
+
+          # Visible study introductions/paradigms must not expose the old technical-output card or hardware acronyms.
+          first_app=next(i for i,s in enumerate(slides) if s.get('appendix'))
+          for s in slides[:first_app]:
+              study=s.get('study','')
+              title=(s.get('_fr') or {}).get('title','').lower()
+              if study in {'TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF'} and any(k in title for k in ['introduction','référence','comprendre','ajouter','paradigme','conditions et démo','transposer']):
+                  c=(s.get('_fr') or {}).get('content','')
+                  assert 'Mesures / sortie' not in c
+                  assert 'EEG BioSemi' not in c
+                  assert 'BIOPAC' not in c
+
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          new_text=text[:st]+new_json+text[st+rel:]
+          assert re.findall(r'<style\b[^>]*>.*?</style>',new_text,flags=re.S|re.I)==styles_before
+          p.write_text(new_text,encoding='utf-8')
+          assert hashlib.sha256(save.read_bytes()).hexdigest()==save_hash
+          print('Polished integrated deck without touching CSS or backup')
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',t,flags=re.S|re.I)
+          Path('/tmp/csi.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/csi.js
+      - name: Verify frozen backup
+        run: |
+          test "$(git hash-object index_save.html)" = "72cb642016506490fd8b5a88c0161371ee4eea28"
+      - name: Commit polish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Polish CSI study summaries and section endings"
+          git push
