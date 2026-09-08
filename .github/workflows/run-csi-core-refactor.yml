@@ -1,0 +1,40 @@
+name: Run CSI core refactor
+on:
+  push:
+    paths:
+      - '.github/workflows/run-csi-core-refactor.yml'
+permissions:
+  contents: write
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run structural refactor
+        run: |
+          set -e
+          BEFORE=$(sha256sum index_save.html | awk '{print $1}')
+          python tools_temp/csi_refactor_core_20260908.py
+          AFTER=$(sha256sum index_save.html | awk '{print $1}')
+          test "$BEFORE" = "$AFTER"
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          text=Path('index.html').read_text(encoding='utf-8')
+          marker='const slides = '
+          st=text.index(marker)+len(marker)
+          slides,_=json.JSONDecoder().raw_decode(text[st:])
+          print('TOTAL',len(slides),'MAIN',sum(not s.get('appendix') for s in slides),'APP',sum(bool(s.get('appendix')) for s in slides))
+          for i,s in enumerate(slides,1):
+              print(f"{i:02d}|{'APP' if s.get('appendix') else 'MAIN'}|{s.get('study','')}|{s.get('title','')}")
+          PY
+      - name: Commit refactor
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refactor CSI narrative and structure"
+          rm .github/workflows/run-csi-core-refactor.yml
+          git add .github/workflows/run-csi-core-refactor.yml
+          git commit -m "Remove temporary CSI core refactor workflow"
+          git push
