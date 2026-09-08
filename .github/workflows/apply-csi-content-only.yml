@@ -1,0 +1,61 @@
+name: Apply CSI content-only rework
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-csi-content-only.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore saved VIBEX figures
+        run: |
+          git checkout 9df775e13cdade06ef6b449b763f7f724f96d3fc -- \
+            assets/results/vibex_conditions.svg \
+            assets/results/vibex_size_interaction.svg \
+            assets/results/vibex_rt_interaction.svg
+      - name: Reapply requested content without DA changes
+        run: |
+          python tools_temp/csi_reapply_content_only_20260908.py
+      - name: Validate DA structure and runtime
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,re,hashlib
+          t=Path('index.html').read_text(encoding='utf-8')
+          b=Path('index_save.html').read_text(encoding='utf-8')
+          styles_t=re.findall(r'<style(?:\s[^>]*)?>.*?</style>',t,re.S|re.I)
+          styles_b=re.findall(r'<style(?:\s[^>]*)?>.*?</style>',b,re.S|re.I)
+          assert styles_t==styles_b
+          m='const slides = '; st=t.index(m)+len(m); slides,_=json.JSONDecoder().raw_decode(t[st:])
+          assert len(slides)==64
+          assert sum(not s.get('appendix') for s in slides)==60
+          assert sum(bool(s.get('appendix')) for s in slides)==4
+          assert all(not s.get('appendix') for s in slides[:60])
+          assert all(s.get('appendix') for s in slides[60:])
+          assert hashlib.sha256(Path('index_save.html').read_bytes()).hexdigest()=='9948fe7ffbb327340129d83624a51611d7325f3c171fd0834e3e5f7f81c307fe'
+          print('DA_AND_STRUCTURE_OK')
+          print('CSS_BLOCKS',len(styles_t))
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',t,re.S|re.I)
+          out=Path('/tmp/csi-js'); out.mkdir(exist_ok=True)
+          for i,s in enumerate(scripts):
+              (out/f'script_{i:02d}.js').write_text(s,encoding='utf-8')
+          print('INLINE_SCRIPTS',len(scripts))
+          PY
+          for f in /tmp/csi-js/*.js; do node --check "$f"; done
+      - name: Commit active deck only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets/results/vibex_conditions.svg assets/results/vibex_size_interaction.svg assets/results/vibex_rt_interaction.svg
+          git commit -m "Reapply CSI changes without changing visual identity"
+          git push
