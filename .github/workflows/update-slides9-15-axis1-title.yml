@@ -1,0 +1,60 @@
+name: Update slides 9 and 15 axis 1 title
+on:
+  push:
+    paths:
+      - '.github/workflows/update-slides9-15-axis1-title.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update axis 1 title on slides 9 and 15 only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, hashlib
+
+          p=Path('index.html')
+          save=Path('index_save.html')
+          save_before=hashlib.sha256(save.read_bytes()).hexdigest()
+          t=p.read_text(encoding='utf-8')
+          marker='const slides = '
+          st=t.index(marker)+len(marker)
+          slides, rel=json.JSONDecoder().raw_decode(t[st:])
+          assert len(slides) >= 15
+
+          old_fr='Relations Spatio-Temporelles entre Olfaction, Vision et Audition'
+          new_fr='Limites Spatio-temporelles de l’olfaction vs celles de la vision et de l’audition'
+          old_en='Spatio-Temporal Relations between Olfaction, Vision and Audition'
+          new_en='Spatio-temporal limits of olfaction vs those of vision and audition'
+
+          for idx in (8,14):
+              s=slides[idx]
+              fr=s.get('_fr') or {}
+              en=s.get('_en') or {}
+              assert old_fr in fr.get('content',''), (idx+1, fr.get('content','')[:300])
+              fr['content']=fr['content'].replace(old_fr,new_fr,1)
+              if old_en in en.get('content',''):
+                  en['content']=en['content'].replace(old_en,new_en,1)
+              s['_fr']=fr
+              s['_en']=en
+              s.update(fr)
+              assert new_fr in s.get('content','')
+              assert new_fr in s['_fr']['content']
+              if en:
+                  assert new_en in s['_en']['content']
+
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          p.write_text(t[:st]+new_json+t[st+rel:],encoding='utf-8')
+          assert hashlib.sha256(save.read_bytes()).hexdigest()==save_before
+          print('Updated Axis 1 title on slides 9 and 15')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Update Axis 1 title on slides 9 and 15"
+          git push
