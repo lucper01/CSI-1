@@ -1,0 +1,117 @@
+name: Apply slide refactor after verified save v2
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-refactor-after-save-v2.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact save point exists
+        run: |
+          cmp -s index.html index_save.html || { echo 'index_save.html is not an exact copy of index.html; aborting.'; exit 1; }
+      - name: Apply requested slide changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+          end = start + rel_end
+
+          # Slide 16 - TWIXAV must use its study color (#0072B2), not the Portfolio accent.
+          s16 = slides[15]
+          def fix_twixav(html):
+              if not isinstance(html, str) or 'TWIXAV' not in html:
+                  return html
+              # Target the first .card containing TWIXAV.
+              starts = [m for m in re.finditer(r'<div class="card([^"]*)"([^>]*)>', html)]
+              for m in starts:
+                  next_start = html.find('<div class="card', m.end())
+                  segment = html[m.start(): next_start if next_start != -1 else len(html)]
+                  if 'TWIXAV' not in segment:
+                      continue
+                  tag = m.group(0)
+                  if 'style=' in tag:
+                      newtag = re.sub(r'style="([^"]*)"', lambda mm: 'style="'+mm.group(1).rstrip(';')+';border-color:#0072B2;box-shadow:inset 4px 0 0 #0072B2"', tag, count=1)
+                  else:
+                      newtag = tag[:-1] + ' style="border-color:#0072B2;box-shadow:inset 4px 0 0 #0072B2">'
+                  return html[:m.start()] + newtag + html[m.end():]
+              return html
+
+          for lang in ('_fr','_en'):
+              if isinstance(s16.get(lang), dict):
+                  s16[lang]['content'] = fix_twixav(s16[lang].get('content',''))
+          s16['content'] = fix_twixav(s16.get('content',''))
+
+          # Remove current slide 34.
+          removed = slides.pop(33)
+
+          # Former slide 35 is now slide 34 - lighter visual hierarchy, no bottom banner.
+          s = slides[33]
+          fr = {
+            'section':'Transition vers la deuxième année',
+            'kicker':'PARTIE 3 - BILAN',
+            'title':'Deux paradigmes stabilisés ouvrent la deuxième année',
+            'lead':'TWIXAV et VIBEX constituent désormais deux socles expérimentaux suffisamment fixés pour engager les trois études prioritaires de l’année suivante.',
+            'content':'''<div class="grid two" style="gap:22px;align-items:stretch">
+<div class="card" style="border-color:#0072B2;box-shadow:inset 4px 0 0 #0072B2"><div class="mono">SOCLE TEMPOREL</div><h3>TWIXAV</h3><p>Paradigme, protocole, mesures et analyses sont stabilisés. Ce socle permet d’aller vers <strong>SOFT</strong>, puis vers la transposition olfactive avec <strong>TWIXOLF</strong>.</p></div>
+<div class="card"><div class="mono">SOCLE SPATIAL</div><h3>VIBEX</h3><p>Le paradigme de Boundary Extension, son protocole et ses analyses sont fixés. Ce socle permet de tester directement l’influence olfactive avec <strong>OASIS</strong>.</p></div>
+</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:22px;margin-top:26px;flex-wrap:wrap;text-align:center">
+<div><div class="mono">ANNÉE 1</div><h3 style="margin:6px 0 0">2 paradigmes opérationnels</h3></div>
+<div style="font-size:32px;font-weight:800;opacity:.55">→</div>
+<div><div class="mono">ANNÉE 2</div><h3 style="margin:6px 0 0">SOFT - OASIS - TWIXOLF</h3></div>
+</div>''',
+            'notes':'Insister sur la transition : deux paradigmes et protocoles bien fixés en année 1 permettent d’ouvrir directement les trois études prioritaires de l’année 2.'
+          }
+          en = {
+            'section':'Transition to Year 2',
+            'kicker':'PART 3 - SUMMARY',
+            'title':'Two stabilized paradigms open the way to Year 2',
+            'lead':'TWIXAV and VIBEX now provide two sufficiently stabilized experimental foundations to launch the three priority studies of the following year.',
+            'content':'''<div class="grid two" style="gap:22px;align-items:stretch">
+<div class="card" style="border-color:#0072B2;box-shadow:inset 4px 0 0 #0072B2"><div class="mono">TEMPORAL FOUNDATION</div><h3>TWIXAV</h3><p>The paradigm, protocol, measures and analyses are stabilized. This foundation supports <strong>SOFT</strong>, then the olfactory transposition with <strong>TWIXOLF</strong>.</p></div>
+<div class="card"><div class="mono">SPATIAL FOUNDATION</div><h3>VIBEX</h3><p>The Boundary Extension paradigm, protocol and analyses are fixed. This foundation supports the direct test of olfactory influence with <strong>OASIS</strong>.</p></div>
+</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:22px;margin-top:26px;flex-wrap:wrap;text-align:center">
+<div><div class="mono">YEAR 1</div><h3 style="margin:6px 0 0">2 operational paradigms</h3></div>
+<div style="font-size:32px;font-weight:800;opacity:.55">→</div>
+<div><div class="mono">YEAR 2</div><h3 style="margin:6px 0 0">SOFT - OASIS - TWIXOLF</h3></div>
+</div>''',
+            'notes':'Emphasize the transition: two well-established Year 1 paradigms and protocols directly support the three priority Year 2 studies.'
+          }
+          s.update(fr)
+          s['_fr'] = fr.copy()
+          s['_en'] = en
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          p.write_text(text[:start] + new_json + text[end:], encoding='utf-8')
+
+          # Sanity checks.
+          check = p.read_text(encoding='utf-8')
+          st = check.index(marker) + len(marker)
+          newslides, _ = json.JSONDecoder().raw_decode(check[st:])
+          assert len(newslides) == len(slides)
+          assert 'Deux paradigmes stabilisés ouvrent la deuxième année' in (newslides[33].get('title',''))
+          assert 'card dark' not in newslides[33].get('content','')
+          assert '#0072B2' in (newslides[15].get('content','') + str(newslides[15].get('_fr',{}).get('content','')))
+          PY
+      - name: Commit modifications and remove temporary workflows
+        run: |
+          rm -f .github/workflows/apply-refactor-after-save-v2.yml
+          rm -f .github/workflows/refactor-slides-16-34-35-trigger.yml
+          rm -f .github/workflows/refactor-slides-16-34-35.yml
+          rm -f .github/workflows/verify-state-temp.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Simplify Year 1 summary and fix TWIXAV accent"
+          git push
