@@ -1,0 +1,36 @@
+name: Check study blocks
+on:
+  push:
+    paths:
+      - '.github/workflows/check-study-blocks.yml'
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect study slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          text=Path('index.html').read_text(encoding='utf-8')
+          marker='const slides = '
+          start=text.index(marker)+len(marker)
+          slides,_=json.JSONDecoder().raw_decode(text[start:])
+          targets={'TWIXAV','VIBEX','SOFT','OASIS','TWIXOLF'}
+          for i,s in enumerate(slides,1):
+              study=s.get('study','')
+              title=s.get('title','')
+              if study in targets or any(x in title for x in targets):
+                  print(f'{i:02d} | study={study!r} | {title}')
+          PY
+      - name: Remove temporary workflow
+        run: |
+          rm .github/workflows/check-study-blocks.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/check-study-blocks.yml
+          git commit -m "Remove temporary study block check" || true
+          git push
