@@ -1,0 +1,94 @@
+name: Split result meta badges v2
+on:
+  push:
+    paths:
+      - '.github/workflows/split-result-meta-badges-v2.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split student and sample size badges
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, hashlib
+
+          path=Path('index.html')
+          backup=Path('index_save.html')
+          backup_hash=hashlib.sha256(backup.read_bytes()).hexdigest()
+          text=path.read_text(encoding='utf-8')
+          marker='const slides = '
+          start=text.index(marker)+len(marker)
+          slides, rel_end=json.JSONDecoder().raw_decode(text[start:])
+          end=start+rel_end
+
+          targets={
+            'TWIXAV':('Alicia Emorine','19'),
+            'VIBEX':('Olivia Hiridjee','24')
+          }
+
+          changed=[]
+          for i,s in enumerate(slides,1):
+              study=s.get('study')
+              if study not in targets:
+                  continue
+              name,n=targets[study]
+              local=0
+              for holder,english in [(s,False),(s.get('_fr') or {},False),(s.get('_en') or {},True)]:
+                  content=holder.get('content','')
+                  if not content:
+                      continue
+                  label="Master's thesis" if english else 'Mémoire M1'
+                  old=f'<div class="m1-owner"><span>{label}</span><strong>{name} - n = {n}</strong></div>'
+                  if old in content:
+                      new=(f'<div class="result-meta-row">'
+                           f'<div class="m1-owner"><span>{label}</span><strong>{name}</strong></div>'
+                           f'<div class="m1-owner result-n"><strong>n = {n}</strong></div>'
+                           f'</div>')
+                      holder['content']=content.replace(old,new)
+                      local+=1
+              if local:
+                  changed.append((i,study,local))
+
+          if changed != [(21,'TWIXAV',3),(28,'VIBEX',3)]:
+              raise RuntimeError(f'Unexpected changed slides: {changed}')
+
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          text=text[:start]+new_json+text[end:]
+
+          css='''\n/* result-meta-split-v2 */\n.result-meta-row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-bottom:14px}.result-meta-row .m1-owner{margin:0}.result-meta-row .result-n{display:flex;align-items:center;justify-content:center;min-width:92px;padding-inline:18px}.result-meta-row .result-n strong{white-space:nowrap}@media(max-width:700px){.result-meta-row{gap:8px}.result-meta-row .result-n{min-width:80px;padding-inline:14px}}\n'''
+          if '/* result-meta-split-v2 */' not in text:
+              text=text.replace('</style>',css+'</style>',1)
+
+          path.write_text(text,encoding='utf-8')
+          if hashlib.sha256(backup.read_bytes()).hexdigest()!=backup_hash:
+              raise RuntimeError('index_save.html changed')
+
+          # Validate the parsed result slides only.
+          final=path.read_text(encoding='utf-8')
+          st=final.index(marker)+len(marker)
+          chk,_=json.JSONDecoder().raw_decode(final[st:])
+          for idx,study,name,n in [(20,'TWIXAV','Alicia Emorine','19'),(27,'VIBEX','Olivia Hiridjee','24')]:
+              s=chk[idx]
+              if s.get('study')!=study: raise RuntimeError(f'Wrong study at {idx+1}')
+              for holder in [s,s.get('_fr') or {},s.get('_en') or {}]:
+                  c=holder.get('content','')
+                  if f'{name} - n = {n}' in c: raise RuntimeError(f'Combined badge remains for {study}')
+                  if f'<strong>{name}</strong>' not in c or f'<strong>n = {n}</strong>' not in c:
+                      raise RuntimeError(f'Split badge missing for {study}')
+          print('Changed:',changed)
+          print('Backup SHA256:',backup_hash)
+          PY
+      - name: Commit and cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Separate M1 student and sample size badges"
+          rm .github/workflows/split-result-meta-badges-v2.yml
+          git add .github/workflows/split-result-meta-badges-v2.yml
+          git commit -m "Remove temporary result badge workflow v2"
+          git push
