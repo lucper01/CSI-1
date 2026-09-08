@@ -1,0 +1,51 @@
+name: Patch CSI batch reserved-study cleanup
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-csi-integrate-v1.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch visible-slide cleanup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/csi-integrate-batch-v1.yml')
+          t=p.read_text(encoding='utf-8')
+          anchor="""              if s.get('_fr'): s.update(s['_fr'])
+
+          # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.
+"""
+          insert="""              if s.get('_fr'): s.update(s['_fr'])
+
+          # Scrub reserved-study names from any remaining metadata or speaker notes on visible slides.
+          def scrub_reserved(obj):
+              if isinstance(obj, dict):
+                  return {k: scrub_reserved(v) for k,v in obj.items()}
+              if isinstance(obj, list):
+                  return [scrub_reserved(v) for v in obj]
+              if isinstance(obj, str):
+                  x = obj.replace('SORBET', '').replace('COBEX', '')
+                  x = re.sub(r'\s+-\s+-\s+', ' - ', x)
+                  x = re.sub(r',\s*,', ',', x)
+                  return x
+              return obj
+          main[:] = [scrub_reserved(s) for s in main]
+
+          # Remove measurement/output cards and overt apparatus buttons from all visible method/paradigm slides.
+"""
+          assert anchor in t
+          t=t.replace(anchor,insert,1)
+          p.write_text(t,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/csi-integrate-batch-v1.yml
+          git commit -m "Patch reserved study cleanup in CSI batch"
+          git push
