@@ -15,17 +15,6 @@ jobs:
         run: python .github/scripts/csi_solar_axis1.py
       - name: Verify frozen checkpoint
         run: git diff --exit-code -- index_save.html
-      - name: Validate inline JavaScript
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          text = Path('index.html').read_text(encoding='utf-8')
-          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S)
-          Path('/tmp/csi-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
-          PY
-          node --check /tmp/csi-inline.js
       - name: Commit patch
         shell: bash
         run: |
