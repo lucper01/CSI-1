@@ -18,8 +18,12 @@ REMOVED = {'SORBET', 'COBEX'}
 # Find the existing year 3 activity slide before cleanup.
 year3_matches = []
 for i, s in enumerate(slides):
-    blob = json.dumps(s, ensure_ascii=False)
-    if 'DocAdoct' in blob or 'FJC 2028' in blob or 'ISOT 2028' in blob:
+    title_blob = ' '.join([
+        str(s.get('title', '')),
+        str(s.get('_fr', {}).get('title', '')),
+        str(s.get('_en', {}).get('title', ''))
+    ])
+    if 'Activités doctorales prévues - 2027-2028' in title_blob or 'Planned doctoral activities - 2027-2028' in title_blob:
         year3_matches.append((i, s))
 assert len(year3_matches) == 1, [m[1].get('title') for m in year3_matches]
 year3_slide = year3_matches[0][1]
@@ -27,9 +31,8 @@ year3_slide = year3_matches[0][1]
 # Remove SORBET and COBEX study slides, plus the temporary third-year divider.
 clean = []
 for s in slides:
-    blob = json.dumps(s, ensure_ascii=False)
     study = str(s.get('study', '')).upper()
-    is_removed_study = study in REMOVED or any(f'data-study="{name}"' in blob for name in REMOVED) and study in REMOVED
+    is_removed_study = study in REMOVED
     is_year3_divider = bool(s.get('divider')) and (
         s.get('title') == 'Troisième année'
         or s.get('title') == 'Third year'
