@@ -1,4 +1,4 @@
-name: Local part timelines and reference labels
+name: Normalize reference labels
 on:
   push:
     paths:
@@ -10,224 +10,63 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch local timelines and references
+      - name: Normalize non-study reference labels
         run: |
           python - <<'PY'
           from pathlib import Path
           import hashlib
           import json
-          import re
-          import textwrap
 
-          p = Path('index.html')
-          save = Path('index_save.html')
-          save_hash = hashlib.sha256(save.read_bytes()).hexdigest()
-          text = p.read_text(encoding='utf-8')
+          p=Path('index.html')
+          save=Path('index_save.html')
+          save_hash=hashlib.sha256(save.read_bytes()).hexdigest()
+          text=p.read_text(encoding='utf-8')
+          marker='const slides = '
+          start=text.index(marker)+len(marker)
+          slides,rel_end=json.JSONDecoder().raw_decode(text[start:])
+          end=start+rel_end
+          titles=[s.get('title','') for s in slides]
+          changed=0
 
-          assert 'CSI_LOCAL_PART_TIMELINE' not in text
-          assert 'const slides = ' in text
+          def fix(value, lang):
+              global changed
+              if not isinstance(value,str):
+                  return value
+              if lang=='fr':
+                  old='<strong>Références</strong>'
+                  new='<strong>Références :</strong>'
+              else:
+                  old='<strong>References</strong>'
+                  new='<strong>References:</strong>'
+              n=value.count(old)
+              if n:
+                  changed+=n
+                  value=value.replace(old,new)
+              return value
 
-          old_css = re.compile(
-              r'\n\s*/\* CSI_PART_TIMELINE_HEADER \*/\s*'
-              r'\.slide \[aria-label="Repère de partie"\] \{.*?'
-              r'@media print \{\s*\.slide \[aria-label="Repère de partie"\] \{\s*display: none !important;\s*\}\s*\}\s*',
-              re.S,
-          )
-          text, css_removed = old_css.subn('\n', text, count=1)
-          assert css_removed == 1, f'Expected one old fixed timeline CSS block, got {css_removed}'
-
-          marker = 'const slides = '
-          start = text.index(marker) + len(marker)
-          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
-          end = start + rel_end
-          titles_before = [s.get('title', '') for s in slides]
-          count_before = len(slides)
-
-          timeline_re = re.compile(r'<div aria-label="Repère de partie"[^>]*>.*?</div>', re.S)
-          cite_re = re.compile(r'<div class="csi-cite">(.*?)</div>', re.S)
-
-          def add_reference_label(content, label):
-              if not content:
-                  return content
-              def repl(match):
-                  inner = match.group(1)
-                  if re.match(r'\s*<strong>\s*(?:Références|References)\b', inner, re.I):
-                      return match.group(0)
-                  return f'<div class="csi-cite"><strong>{label}</strong> {inner.lstrip()}</div>'
-              return cite_re.sub(repl, content)
-
-          removed_count = 0
           for s in slides:
-              value = s.get('content')
-              if isinstance(value, str):
-                  value, n = timeline_re.subn('', value)
-                  removed_count += n
-                  s['content'] = add_reference_label(value, 'Références :')
+              if s.get('study'):
+                  continue
+              s['content']=fix(s.get('content'),'fr')
+              fr=s.get('_fr')
+              if isinstance(fr,dict):
+                  fr['content']=fix(fr.get('content'),'fr')
+              en=s.get('_en')
+              if isinstance(en,dict):
+                  en['content']=fix(en.get('content'),'en')
 
-              for variant, label in (('_fr', 'Références :'), ('_en', 'References:')):
-                  block = s.get(variant)
-                  if isinstance(block, dict):
-                      value = block.get('content')
-                      if isinstance(value, str):
-                          value, n = timeline_re.subn('', value)
-                          removed_count += n
-                          block['content'] = add_reference_label(value, label)
+          assert changed>0, 'No non-study reference labels needed normalization'
+          new_json=json.dumps(slides,ensure_ascii=False,separators=(',',':'))
+          text=text[:start]+new_json+text[end:]
+          p.write_text(text,encoding='utf-8')
 
-          assert removed_count > 0, 'No old content timelines were removed'
-          assert len(slides) == count_before
-          assert [s.get('title', '') for s in slides] == titles_before
-
-          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
-          text = text[:start] + new_json + text[end:]
-
-          css = textwrap.dedent(r'''
-              /* CSI_LOCAL_PART_TIMELINE */
-              .slide-kicker.part-timeline-slot {
-                width: 100% !important;
-                max-width: 100% !important;
-                height: 22px !important;
-                display: flex !important;
-                align-items: center !important;
-                margin: 0 0 10px !important;
-                color: inherit !important;
-                overflow: hidden !important;
-              }
-              .slide-kicker.part-timeline-slot::before { display: none !important; }
-              .part-timeline {
-                width: 100%;
-                min-width: 0;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                overflow: hidden;
-                font-size: .58rem;
-                line-height: 1;
-                letter-spacing: .055em;
-                text-transform: uppercase;
-              }
-              .part-timeline .part-step {
-                color: var(--muted);
-                font-weight: 760;
-                opacity: .48;
-                white-space: nowrap;
-              }
-              .part-timeline .part-step.active {
-                color: var(--accent-strong);
-                font-weight: 950;
-                opacity: 1;
-              }
-              .part-timeline > i {
-                width: 11px;
-                min-width: 5px;
-                height: 1px;
-                flex: 0 1 11px;
-                background: var(--line);
-              }
-              @media (max-width: 760px) {
-                .part-timeline { gap: 4px; font-size: .49rem; }
-                .part-timeline > i { width: 6px; min-width: 3px; }
-              }
-          ''')
-          style_pos = text.find('</style>')
-          assert style_pos != -1
-          text = text[:style_pos] + css + text[style_pos:]
-
-          js = textwrap.dedent(r'''
-              // CSI_LOCAL_PART_TIMELINE
-              function partTimelineFor(index){
-                const n=index+1;
-                const E=document.documentElement.lang==='en';
-                if(n>=4&&n<=12){
-                  const steps=E
-                    ? ['VISION + AUDITION','TIME','SPACE','INTEGRATION','SYNTHESIS','OLFACTION','AXES','INFLUENCE']
-                    : ['VISION + AUDITION','TEMPS','ESPACE','INTÉGRATION','SYNTHÈSE','OLFACTION','AXES','INFLUENCE'];
-                  const active={4:0,5:1,6:2,7:3,8:4,9:5,10:5,11:6,12:7}[n];
-                  return {steps,active};
-                }
-                if(n>=14&&n<=15){
-                  return {steps:E?['AXES','STUDY PROGRAM']:['AXES','PROGRAMME D\'ÉTUDES'],active:n===14?0:1};
-                }
-                if(n>=17&&n<=33){
-                  const steps=E
-                    ? ['REVIEW','TWIXAV','VIBEX','FLUXOLF','ACTIVITIES','TRANSITION']
-                    : ['BILAN','TWIXAV','VIBEX','FLUXOLF','ACTIVITÉS','TRANSITION'];
-                  let active=0;
-                  if(n>=18&&n<=22) active=1;
-                  else if(n>=23&&n<=29) active=2;
-                  else if(n===30) active=3;
-                  else if(n>=31&&n<=32) active=4;
-                  else if(n===33) active=5;
-                  return {steps,active};
-                }
-                if(n>=35&&n<=44){
-                  const steps=E
-                    ? ['PRIORITIES','SOFT','OASIS','TWIXOLF','ACTIVITIES','PUBLICATIONS']
-                    : ['PRIORITÉS','SOFT','OASIS','TWIXOLF','ACTIVITÉS','PUBLICATIONS'];
-                  let active=0;
-                  if(n>=37&&n<=38) active=1;
-                  else if(n>=39&&n<=40) active=2;
-                  else if(n>=41&&n<=42) active=3;
-                  else if(n===43) active=4;
-                  else if(n===44) active=5;
-                  return {steps,active};
-                }
-                if(n>=45&&n<=51){
-                  const steps=E
-                    ? ['OVERVIEW','SORBET','SOLAR','COBEX','BRAUD','BRAUDOLF']
-                    : ['VUE D\'ENSEMBLE','SORBET','SOLAR','COBEX','BRAUD','BRAUDOLF'];
-                  const active=n<=46?0:n-46;
-                  return {steps,active};
-                }
-                if(n>=52&&n<=54){
-                  return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-52};
-                }
-                if(n>=55&&n<=57){
-                  return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-55};
-                }
-                return null;
-              }
-              function renderPartTimeline(index,s){
-                const t=partTimelineFor(index);
-                if(!t) return s.kicker||s.section;
-                const label=document.documentElement.lang==='en'?'Section progress':'Progression de la partie';
-                return `<div class="part-timeline" aria-label="${label}">${t.steps.map((step,j)=>`<span class="part-step${j===t.active?' active':''}">${step}</span>`).join('<i aria-hidden="true"></i>')}</div>`;
-              }
-          ''')
-          render_match = re.search(r'\n\s*function renderSlides\(\)\s*\{', text)
-          assert render_match, 'renderSlides function not found'
-          text = text[:render_match.start()] + '\n' + js + text[render_match.start():]
-
-          old_kicker = '<div class="slide-kicker">${s.kicker||s.section}</div>'
-          new_kicker = '<div class="slide-kicker${partTimelineFor(i)?\' part-timeline-slot\':\'\'}">${renderPartTimeline(i,s)}</div>'
-          assert text.count(old_kicker) == 1, f'Expected one kicker renderer, got {text.count(old_kicker)}'
-          text = text.replace(old_kicker, new_kicker, 1)
-
-          p.write_text(text, encoding='utf-8')
-
-          final = p.read_text(encoding='utf-8')
-          assert 'CSI_PART_TIMELINE_HEADER' not in final
-          assert 'aria-label="Repère de partie"' not in final
+          final=p.read_text(encoding='utf-8')
+          start2=final.index(marker)+len(marker)
+          slides2,_=json.JSONDecoder().raw_decode(final[start2:])
+          assert [s.get('title','') for s in slides2]==titles
+          assert hashlib.sha256(save.read_bytes()).hexdigest()==save_hash
           assert 'CSI_LOCAL_PART_TIMELINE' in final
-          assert 'partTimelineFor(i)' in final
-          assert hashlib.sha256(save.read_bytes()).hexdigest() == save_hash
-
-          start2 = final.index(marker) + len(marker)
-          slides2, _ = json.JSONDecoder().raw_decode(final[start2:])
-          assert len(slides2) == count_before
-          assert [s.get('title', '') for s in slides2] == titles_before
-
-          for s in slides2:
-              v=s.get('content','')
-              if 'class="csi-cite"' in v:
-                  assert '<div class="csi-cite"><strong>Références :</strong>' in v
-              fr=s.get('_fr') or {}
-              if isinstance(fr,dict) and 'class="csi-cite"' in fr.get('content',''):
-                  assert '<div class="csi-cite"><strong>Références :</strong>' in fr['content']
-              en=s.get('_en') or {}
-              if isinstance(en,dict) and 'class="csi-cite"' in en.get('content',''):
-                  assert '<div class="csi-cite"><strong>References:</strong>' in en['content']
-
-          print(f'Updated {count_before} slides; removed {removed_count} old timeline instances')
+          print(f'Normalized {changed} reference labels')
           PY
       - name: Validate inline JavaScript
         run: |
@@ -248,5 +87,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Use local timelines in slide kicker"
+          git commit -m "Normalize reference labels"
           git push
