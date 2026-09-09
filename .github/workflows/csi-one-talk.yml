@@ -1,0 +1,26 @@
+name: Update year 1 talk count
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_one_talk.py'
+      - '.github/workflows/csi-one-talk.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update talk count
+        run: python .github/scripts/csi_one_talk.py
+      - name: Verify frozen checkpoint
+        run: git diff --exit-code -- index_save.html
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Use 1 talk in year 1 activities"
+          git push
