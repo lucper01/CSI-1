@@ -1,0 +1,29 @@
+name: Roll back last CSI deployment
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-rollback-last.yml'
+permissions:
+  contents: write
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore previous index
+        shell: bash
+        run: |
+          git cat-file blob 55a19bd1e025c5c00c8238367d666700aac3cbcf > index.html
+          test "$(git hash-object index.html)" = "55a19bd1e025c5c00c8238367d666700aac3cbcf"
+          git diff --exit-code -- index_save.html
+      - name: Commit rollback
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Revert last CSI deployment"
+          git push
