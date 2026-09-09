@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/scripts/csi_axis_font_size.py'
+      - '.github/workflows/csi-axis-font-size.yml'
 permissions:
   contents: write
 jobs:
