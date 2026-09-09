@@ -1,0 +1,55 @@
+name: Update CSI Part 6 timeline
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-update-part6-timeline.yml'
+permissions:
+  contents: write
+jobs:
+  update-timeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Part 6 footer timeline
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = """  if(n>=53&&n<=55){
+    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-53};
+  }
+
+  if(n>=52&&n<=53){
+    return {steps:E?['YEAR 3','ACTIVITIES']:['3ÈME ANNÉE','ACTIVITÉS'],active:n-52};
+  }
+  if(n>=56&&n<=58){
+    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-56};
+  }"""
+          new = """  if(n>=52&&n<=54){
+    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-52};
+  }
+  if(n>=55&&n<=57){
+    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-55};
+  }"""
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new, 1)
+          assert "['3ÈME ANNÉE','ACTIVITÉS']" not in text
+          assert "if(n>=52&&n<=54)" in text
+          assert "active:n-52" in text
+          assert "if(n>=55&&n<=57)" in text
+          assert "active:n-55" in text
+          path.write_text(text, encoding='utf-8')
+          PY
+          git diff --exit-code -- index_save.html
+      - name: Commit timeline update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Update Part 6 timeline after slide removal"
+          git push
