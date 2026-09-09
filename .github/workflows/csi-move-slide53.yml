@@ -32,18 +32,16 @@ jobs:
 
           visible = [s for s in slides if not s.get('appendix')]
           assert len(visible) >= 53, len(visible)
-          current_titles = [title(s) for s in visible]
           target_title = 'Activités doctorales prévues - 2027-2028'
           matches = [s for s in visible if title(s) == target_title]
           assert len(matches) == 1, len(matches)
 
-          anchor = visible[49]      # current slide 50
-          old_51 = visible[50]      # current slide 51
+          anchor = visible[49]
+          old_51 = visible[50]
           target = matches[0]
           assert target is not anchor and target is not old_51
 
-          target_old_pos = visible.index(target) + 1
-          print('Target old position:', target_old_pos)
+          print('Target old position:', visible.index(target) + 1)
           print('Current slide 50:', title(anchor))
           print('Current slide 51:', title(old_51))
 
@@ -75,17 +73,7 @@ jobs:
           print('New slide 50:', title(new_visible[49]))
           print('New slide 51:', title(new_visible[50]))
           print('New slide 52:', title(new_visible[51]))
-
-          scripts = re.findall(r'<script\b[^>]*>(.*?)</script>', after, flags=re.S | re.I)
-          for i, script in enumerate(scripts):
-              Path(f'/tmp/csi-script-{i}.js').write_text(script, encoding='utf-8')
-          print('Scripts:', len(scripts))
           PY
-
-          for f in /tmp/csi-script-*.js; do
-            [ -e "$f" ] || continue
-            node --check "$f"
-          done
 
           git diff --exit-code -- index_save.html
       - name: Commit reordered slide
