@@ -48,7 +48,8 @@ def fix_retro(html, lang):
 
 for s in slides:
     title = s.get('title', '')
-    if title == 'Deux axes':
+    is_architecture_axes = title == 'Deux axes' and 'v16-pills' in s.get('content', '')
+    if is_architecture_axes:
         s['content'] = fix_axes_slide(s['content'], 'fr')
         s['_fr']['content'] = fix_axes_slide(s['_fr']['content'], 'fr')
         s['_en']['content'] = fix_axes_slide(s['_en']['content'], 'en')
@@ -64,12 +65,13 @@ for s in slides:
 for s in slides:
     if s.get('appendix'):
         continue
+    is_architecture_axes = s.get('title') == 'Deux axes' and 'v16-pills' in s.get('content', '')
     for langkey, lang in ((None, 'fr'), ('_fr', 'fr'), ('_en', 'en')):
         d = s if langkey is None else s.get(langkey, {})
         html = d.get('content', '')
         if 'SOLAR' not in html:
             continue
-        if s.get('title') == 'Deux axes':
+        if is_architecture_axes:
             split_label = '<article><b>Axe 2</b>' if lang == 'fr' else '<article><b>Axis 2</b>'
             before, after = html.split(split_label, 1)
             assert 'SOLAR' in before and 'SOLAR' not in after
