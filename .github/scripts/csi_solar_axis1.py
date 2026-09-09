@@ -12,6 +12,7 @@ slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
 end = start + rel_end
 
 solar_span = '<span data-study="SOLAR">SOLAR</span>'
+sorbet_span = '<span data-study="SORBET">SORBET</span>'
 
 def fix_axes_slide(html, lang):
     axis2_label = '<article><b>Axe 2</b>' if lang == 'fr' else '<article><b>Axis 2</b>'
@@ -19,9 +20,8 @@ def fix_axes_slide(html, lang):
     first, second = html.split(axis2_label, 1)
     first = first.replace(solar_span, '')
     second = second.replace(solar_span, '')
-    pos = first.rfind('</div>')
-    assert pos != -1
-    first = first[:pos] + solar_span + first[pos:]
+    assert sorbet_span in first
+    first = first.replace(sorbet_span, sorbet_span + solar_span, 1)
     return first + axis2_label + second
 
 def fix_extensions(html, lang):
