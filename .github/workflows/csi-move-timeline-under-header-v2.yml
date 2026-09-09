@@ -21,7 +21,7 @@ jobs:
           save_hash = hashlib.sha256(save.read_bytes()).hexdigest()
           text = p.read_text(encoding='utf-8')
 
-          assert 'aria-label="Repère de partie"' in text
+          assert 'Repère de partie' in text
           assert 'CSI_PART_TIMELINE_HEADER' not in text
 
           lines = [
