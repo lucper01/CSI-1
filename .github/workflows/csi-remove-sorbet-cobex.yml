@@ -2,6 +2,7 @@ name: Remove SORBET and COBEX
 on:
   push:
     paths:
+      - '.github/scripts/csi_remove_sorbet_cobex.py'
       - '.github/workflows/csi-remove-sorbet-cobex.yml'
 permissions:
   contents: write
@@ -10,136 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Remove SORBET and COBEX from deck
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import json, re, hashlib
-
-          path = Path('index.html')
-          save = Path('index_save.html')
-          before_save = hashlib.sha256(save.read_bytes()).hexdigest()
-          text = path.read_text(encoding='utf-8')
-          marker = 'const slides = '
-          start = text.index(marker) + len(marker)
-          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
-          end = start + rel_end
-
-          removed = {'SORBET', 'COBEX'}
-
-          def has_removed_study(slide):
-              vals = [str(slide.get('study','')), str(slide.get('title','')), str(slide.get('kicker',''))]
-              for lk in ('_fr','_en'):
-                  d = slide.get(lk) or {}
-                  vals.extend([str(d.get('study','')), str(d.get('title','')), str(d.get('kicker',''))])
-              return any(v.strip().upper() in removed for v in vals)
-
-          def clean_html(html):
-              if not isinstance(html, str) or not html:
-                  return html
-              # Remove complete cards/articles/spans dedicated to the removed studies.
-              for study in sorted(removed):
-                  html = re.sub(r'<article\b(?=[^>]*data-study="' + study + r'")[\s\S]*?</article>', '', html)
-                  html = re.sub(r'<span\b(?=[^>]*data-study="' + study + r'")[\s\S]*?</span>', '', html)
-                  html = re.sub(r'<button\b(?=[^>]*data-apparatus-study="' + study + r'")[\s\S]*?</button>', '', html)
-                  html = re.sub(r'<div\b(?=[^>]*data-study="' + study + r'")[\s\S]*?</div>', '', html)
-              # Remove textual references in sentences or lists.
-              replacements = [
-                  (' et SORBET', ''), (' et COBEX', ''), ('and SORBET', ''), ('and COBEX', ''),
-                  ('SORBET et ', ''), ('COBEX et ', ''), ('SORBET and ', ''), ('COBEX and ', ''),
-                  (' - SORBET', ''), (' - COBEX', ''), (' · SORBET', ''), (' · COBEX', ''),
-                  (' / SORBET', ''), (' / COBEX', ''), ('; SORBET', ''), ('; COBEX', ''),
-                  (', SORBET', ''), (', COBEX', ''), ('SORBET, ', ''), ('COBEX, ', ''),
-                  ('SORBET', ''), ('COBEX', ''),
-              ]
-              for old, new in replacements:
-                  html = html.replace(old, new)
-              # Clean up empty double separators and empty wrappers.
-              html = re.sub(r'(<div class="v16-extension-map">)\s*(</div>)', r'\1\2', html)
-              html = re.sub(r'\s{2,}', ' ', html)
-              return html
-
-          def clean_text(value):
-              if not isinstance(value, str):
-                  return value
-              for token in removed:
-                  value = value.replace(' et ' + token, '')
-                  value = value.replace(' and ' + token, '')
-                  value = value.replace(token + ' et ', '')
-                  value = value.replace(token + ' and ', '')
-                  value = value.replace(', ' + token, '')
-                  value = value.replace(token + ', ', '')
-                  value = value.replace(token, '')
-              value = re.sub(r'\s{2,}', ' ', value).strip()
-              return value
-
-          new_slides = []
-          for slide in slides:
-              if has_removed_study(slide):
-                  continue
-              for key in ('section','kicker','title','lead','content','notes','chapter','study'):
-                  if key in slide:
-                      slide[key] = clean_html(slide[key]) if key == 'content' else clean_text(slide[key])
-              for lk in ('_fr','_en'):
-                  d = slide.get(lk)
-                  if isinstance(d, dict):
-                      for key in ('section','kicker','title','lead','content','notes','chapter','study'):
-                          if key in d:
-                              d[key] = clean_html(d[key]) if key == 'content' else clean_text(d[key])
-              new_slides.append(slide)
-
-          # Clean visible navigation/timeline labels around the extensions and final sections.
-          # Current structure after removing the two dedicated slides:
-          # Part 5 extensions: slide 44 divider, 45 map, 46 SOLAR, 47 BRAUD, 48 BRAUDOLF, 49 activities year 3.
-          # Part 6 retroplanning: slides 50-52.
-          # Final: slides 53-55.
-          old_timeline = """  if(n>=52&&n<=54){
-    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-52};
-  }
-  if(n>=55&&n<=57){
-    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-55};
-  }"""
-          new_timeline = """  if(n>=50&&n<=52){
-    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-50};
-  }
-  if(n>=53&&n<=55){
-    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-53};
-  }"""
-          # Some versions may still contain the older intermediate form.
-          alt_old_timeline = """  if(n>=53&&n<=55){
-    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-53};
-  }
-
-  if(n>=52&&n<=53){
-    return {steps:E?['YEAR 3','ACTIVITIES']:['3ÈME ANNÉE','ACTIVITÉS'],active:n-52};
-  }
-  if(n>=56&&n<=58){
-    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-56};
-  }"""
-
-          new_json = json.dumps(new_slides, ensure_ascii=False, separators=(',', ':'))
-          text = text[:start] + new_json + text[end:]
-          if old_timeline in text:
-              text = text.replace(old_timeline, new_timeline, 1)
-          elif alt_old_timeline in text:
-              text = text.replace(alt_old_timeline, new_timeline, 1)
-
-          # Remove residual references outside slide JSON if they were only used for labels.
-          text = text.replace('SORBET','').replace('COBEX','')
-          text = re.sub(r'\s{2,}', ' ', text)
-
-          assert 'SORBET' not in text
-          assert 'COBEX' not in text
-          assert len(new_slides) == len(slides) - 2, (len(slides), len(new_slides))
-          assert any('SOLAR' in json.dumps(s, ensure_ascii=False) for s in new_slides)
-          assert any('BRAUD' in json.dumps(s, ensure_ascii=False) for s in new_slides)
-          assert any('BRAUDOLF' in json.dumps(s, ensure_ascii=False) for s in new_slides)
-          assert hashlib.sha256(save.read_bytes()).hexdigest() == before_save
-
-          path.write_text(text, encoding='utf-8')
-          PY
-          git diff --exit-code -- index_save.html
+      - name: Remove removed studies
+        run: python .github/scripts/csi_remove_sorbet_cobex.py
+      - name: Verify saved checkpoint
+        run: git diff --exit-code -- index_save.html
       - name: Commit patch
         shell: bash
         run: |
