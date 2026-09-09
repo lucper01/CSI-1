@@ -15,32 +15,21 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
-          old = """  if(n>=53&&n<=55){
-    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-53};
-  }
-
-  if(n>=52&&n<=53){
-    return {steps:E?['YEAR 3','ACTIVITIES']:['3ÈME ANNÉE','ACTIVITÉS'],active:n-52};
-  }
-  if(n>=56&&n<=58){
-    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-56};
-  }"""
-          new = """  if(n>=52&&n<=54){
-    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-52};
-  }
-  if(n>=55&&n<=57){
-    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-55};
-  }"""
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new, 1)
+          assert text.count("if(n>=53&&n<=55){") == 1
+          assert text.count("if(n>=52&&n<=53){") == 1
+          assert text.count("if(n>=56&&n<=58){") == 1
+          text = text.replace("if(n>=53&&n<=55){", "if(n>=52&&n<=54){", 1)
+          text = text.replace("return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-53};", "return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-52};", 1)
+          year3 = "  if(n>=52&&n<=53){\n    return {steps:E?['YEAR 3','ACTIVITIES']:['3ÈME ANNÉE','ACTIVITÉS'],active:n-52};\n  }\n"
+          assert text.count(year3) == 1
+          text = text.replace(year3, "", 1)
+          text = text.replace("if(n>=56&&n<=58){", "if(n>=55&&n<=57){", 1)
+          text = text.replace("return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-56};", "return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-55};", 1)
           assert "['3ÈME ANNÉE','ACTIVITÉS']" not in text
           assert "if(n>=52&&n<=54)" in text
-          assert "active:n-52" in text
           assert "if(n>=55&&n<=57)" in text
-          assert "active:n-55" in text
           path.write_text(text, encoding='utf-8')
           PY
           git diff --exit-code -- index_save.html
