@@ -1,7 +1,6 @@
 from pathlib import Path
 import json
 import hashlib
-import re
 
 p = Path('index.html')
 save = Path('index_save.html')
@@ -20,7 +19,7 @@ def fix_axes_slide(html, lang):
     first, second = html.split(axis2_label, 1)
     first = first.replace(solar_span, '')
     second = second.replace(solar_span, '')
-    pos = first.rfind('</div></article>')
+    pos = first.rfind('</div>')
     assert pos != -1
     first = first[:pos] + solar_span + first[pos:]
     return first + axis2_label + second
@@ -33,16 +32,14 @@ def fix_extensions(html, lang):
 
 def fix_retro(html, lang):
     if lang == 'fr':
-        axis1 = '<section><h3>Axe 1 - Temps</h3>'
         axis2 = '<section><h3>Axe 2 - Espace</h3>'
         old_axis1_ext = '<div class="lane ext"><b>Complémentaire</b><i></i><i></i><article data-study="SORBET"><strong>SORBET</strong></article><i></i></div>'
         new_axis1_ext = '<div class="lane ext"><b>Complémentaire</b><i></i><i></i><article class="stack"><span data-study="SORBET"><strong>SORBET</strong></span><span data-study="SOLAR"><strong>SOLAR</strong></span></article><i></i></div>'
     else:
-        axis1 = '<section><h3>Axis 1 - Time</h3>'
         axis2 = '<section><h3>Axis 2 - Space</h3>'
         old_axis1_ext = '<div class="lane ext"><b>Complementary</b><i></i><i></i><article data-study="SORBET"><strong>SORBET</strong></article><i></i></div>'
         new_axis1_ext = '<div class="lane ext"><b>Complementary</b><i></i><i></i><article class="stack"><span data-study="SORBET"><strong>SORBET</strong></span><span data-study="SOLAR"><strong>SOLAR</strong></span></article><i></i></div>'
-    assert axis1 in html and axis2 in html
+    assert axis2 in html
     a1, rest = html.split(axis2, 1)
     assert old_axis1_ext in a1
     a1 = a1.replace(old_axis1_ext, new_axis1_ext, 1)
@@ -64,7 +61,6 @@ for s in slides:
         s['_fr']['content'] = fix_retro(s['_fr']['content'], 'fr')
         s['_en']['content'] = fix_retro(s['_en']['content'], 'en')
 
-# Validation on every SOLAR occurrence in visible slides.
 for s in slides:
     if s.get('appendix'):
         continue
