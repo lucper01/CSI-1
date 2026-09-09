@@ -955,6 +955,38 @@
 
 /* result-meta-split-v2 */
 .result-meta-row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-bottom:14px}.result-meta-row .m1-owner{margin:0}.result-meta-row .result-n{display:flex;align-items:center;justify-content:center;min-width:92px;padding-inline:18px}.result-meta-row .result-n strong{white-space:nowrap}@media(max-width:700px){.result-meta-row{gap:8px}.result-meta-row .result-n{min-width:80px;padding-inline:14px}}
+
+    /* CSI_PART_TIMELINE_HEADER */
+    .slide [aria-label="Repère de partie"] {
+      position: fixed !important;
+      z-index: 1175 !important;
+      top: 72px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: min(1180px, calc(100vw - 36px)) !important;
+      max-width: min(1180px, calc(100vw - 36px)) !important;
+      justify-content: center !important;
+      margin: 0 !important;
+      padding: 3px 10px !important;
+      pointer-events: none !important;
+    }
+    body[data-view="scroll"] .slide [aria-label="Repère de partie"] {
+      display: none !important;
+    }
+    @media (max-width: 760px) {
+      .slide [aria-label="Repère de partie"] {
+        top: 62px !important;
+        width: calc(100vw - 22px) !important;
+        max-width: calc(100vw - 22px) !important;
+        gap: 4px !important;
+        font-size: .52rem !important;
+      }
+    }
+    @media print {
+      .slide [aria-label="Repère de partie"] {
+        display: none !important;
+      }
+    }
 </style>
 
 <style id="csi-flat-v17">
