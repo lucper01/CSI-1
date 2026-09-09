@@ -1,0 +1,75 @@
+name: Bold reference labels
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-bold-reference-labels.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bold all reference labels
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          p = Path('index.html')
+          save = Path('index_save.html')
+          before_save = hashlib.sha256(save.read_bytes()).hexdigest()
+          text = p.read_text(encoding='utf-8')
+
+          # Normalize all visible reference labels, including study slides.
+          text = text.replace('<strong>Références</strong>', '<strong>Références :</strong>')
+          text = text.replace('<strong>References</strong>', '<strong>References:</strong>')
+
+          # Enforce the same bold treatment everywhere, regardless of the reference block component.
+          css = '''
+/* CSI_REFERENCE_LABEL_BOLD */
+.csi-cite strong,
+.v16-ref strong,
+.csi-extra-refs strong {
+  font-weight: 950 !important;
+}
+'''
+          if 'CSI_REFERENCE_LABEL_BOLD' not in text:
+              pos = text.rfind('</style>')
+              assert pos != -1
+              text = text[:pos] + css + text[pos:]
+
+          p.write_text(text, encoding='utf-8')
+
+          # Validation: every explicit FR/EN reference label is bolded.
+          out = p.read_text(encoding='utf-8')
+          assert '<strong>Références</strong>' not in out
+          assert '<strong>References</strong>' not in out
+          assert 'CSI_REFERENCE_LABEL_BOLD' in out
+          assert hashlib.sha256(save.read_bytes()).hexdigest() == before_save
+          PY
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,re.S)
+          Path('/tmp/csi-inline.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/csi-inline.js
+      - name: Verify frozen backup
+        shell: bash
+        run: git diff --exit-code -- index_save.html
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Bold reference labels everywhere"
+          git push
