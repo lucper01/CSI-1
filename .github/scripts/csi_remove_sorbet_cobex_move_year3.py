@@ -51,19 +51,15 @@ def strip_removed_from_html(html):
     if not isinstance(html, str):
         return html
     for name in REMOVED:
-        # Cards and study blocks.
         html = re.sub(r'<article\b(?=[^>]*data-study=\\"' + name + r'\\")[\s\S]*?</article>', '', html)
         html = re.sub(r'<article\b(?=[^>]*data-study="' + name + r'")[\s\S]*?</article>', '', html)
-        # Spans and pills.
         html = re.sub(r'<span\b(?=[^>]*data-study=\\"' + name + r'\\")[\s\S]*?</span>', '', html)
         html = re.sub(r'<span\b(?=[^>]*data-study="' + name + r'")[\s\S]*?</span>', '', html)
-        # Bare labels left in short lists.
         html = re.sub(r'\s*[·,;]\s*' + name + r'\b', '', html)
         html = re.sub(r'\b' + name + r'\s*[·,;]\s*', '', html)
         html = html.replace(name, '')
     html = re.sub(r'(?:<i></i>){2,}', '<i></i>', html)
     html = re.sub(r'\s{2,}', ' ', html)
-    html = html.replace('><', '><')
     return html
 
 for s in slides:
@@ -92,10 +88,9 @@ year3_slide['appendix'] = False
 year3_slide['divider'] = False
 year3_slide['hero'] = False
 
-# Insert after the BRAUDOLF slide. If absent, insert after the complementary overview.
-braudolf_indices = [i for i, s in enumerate(slides) if s.get('study') == 'BRAUDOLF' or 'BRAUDOLF' in json.dumps(s, ensure_ascii=False)]
-assert braudolf_indices, 'BRAUDOLF insertion anchor not found'
-insert_pos = max(braudolf_indices) + 1
+braudolf_slide_indices = [i for i, s in enumerate(slides) if s.get('study') == 'BRAUDOLF']
+assert braudolf_slide_indices, 'BRAUDOLF study slide not found'
+insert_pos = max(braudolf_slide_indices) + 1
 slides[insert_pos:insert_pos] = [year3_slide]
 
 new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
@@ -107,7 +102,6 @@ for name in REMOVED:
     text = re.sub(r"[,'\"]" + name + r"[,'\"]", lambda m: m.group(0).replace(name, ''), text)
     text = text.replace(name, '')
 
-# Replace the local timeline function with a metadata-based version so section markers remain correct after deletions and moves.
 fn_start = text.index('function partTimelineFor(index){')
 fn_end = text.index('\nfunction renderPartTimeline', fn_start)
 new_fn = r'''function partTimelineFor(index){
@@ -171,7 +165,6 @@ new_fn = r'''function partTimelineFor(index){
 }'''
 text = text[:fn_start] + new_fn + text[fn_end:]
 
-# Final checks: no removed labels anywhere, no third-year divider, moved activity slide is after BRAUDOLF.
 assert 'SORBET' not in text
 assert 'COBEX' not in text
 assert 'Troisième année</h1>' not in text
@@ -179,7 +172,7 @@ assert 'Third year</h1>' not in text
 assert 'DocAdoct' in text
 visible = [s for s in slides if not s.get('appendix')]
 idx_activity = [i for i, s in enumerate(visible) if 'DocAdoct' in json.dumps(s, ensure_ascii=False)]
-idx_braudolf = [i for i, s in enumerate(visible) if 'BRAUDOLF' in json.dumps(s, ensure_ascii=False)]
+idx_braudolf = [i for i, s in enumerate(visible) if s.get('study') == 'BRAUDOLF']
 assert len(idx_activity) == 1
 assert idx_braudolf and idx_activity[0] > max(idx_braudolf)
 assert hashlib.sha256(save.read_bytes()).hexdigest() == save_before
