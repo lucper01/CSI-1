@@ -16,34 +16,22 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import hashlib
-          import re
 
           p = Path('index.html')
           save = Path('index_save.html')
           before_save = hashlib.sha256(save.read_bytes()).hexdigest()
           text = p.read_text(encoding='utf-8')
 
-          # Normalize all visible reference labels, including study slides.
           text = text.replace('<strong>Références</strong>', '<strong>Références :</strong>')
           text = text.replace('<strong>References</strong>', '<strong>References:</strong>')
 
-          # Enforce the same bold treatment everywhere, regardless of the reference block component.
-          css = '''
-/* CSI_REFERENCE_LABEL_BOLD */
-.csi-cite strong,
-.v16-ref strong,
-.csi-extra-refs strong {
-  font-weight: 950 !important;
-}
-'''
+          css = '\n/* CSI_REFERENCE_LABEL_BOLD */\n.csi-cite strong,\n.v16-ref strong,\n.csi-extra-refs strong {\n  font-weight: 950 !important;\n}\n'
           if 'CSI_REFERENCE_LABEL_BOLD' not in text:
               pos = text.rfind('</style>')
               assert pos != -1
               text = text[:pos] + css + text[pos:]
 
           p.write_text(text, encoding='utf-8')
-
-          # Validation: every explicit FR/EN reference label is bolded.
           out = p.read_text(encoding='utf-8')
           assert '<strong>Références</strong>' not in out
           assert '<strong>References</strong>' not in out
