@@ -2021,6 +2021,89 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
 @media (max-width: 760px) {
   .study-axis-badge { font-size: .48rem; padding: 3px 6px; }
 }
+
+/* CSI_FOOTER_TIMELINE_AXIS_TOP */
+.slide-kicker.axis-slot {
+  width: max-content !important;
+  max-width: 100% !important;
+  height: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 0 10px !important;
+  overflow: visible !important;
+}
+.slide-kicker.axis-slot::before {
+  display: none !important;
+}
+.slide-kicker.axis-slot .study-axis-badge {
+  min-height: 21px;
+  padding: 3px 9px;
+  font-size: .56rem;
+}
+
+.deck-footer {
+  max-width: min(1160px, calc(100vw - 220px));
+  gap: 10px;
+  padding: 6px 10px;
+}
+.footer-timeline-slot {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.footer-timeline-slot:empty {
+  display: none;
+}
+.footer-timeline-slot:empty + .footer-divider {
+  display: none;
+}
+.deck-footer .footer-part-timeline {
+  width: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .54rem;
+  line-height: 1;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.deck-footer .footer-part-timeline .part-step {
+  color: var(--muted);
+  font-weight: 760;
+  opacity: .42;
+  white-space: nowrap;
+}
+.deck-footer .footer-part-timeline .part-step.active {
+  color: var(--accent-strong);
+  font-weight: 950;
+  opacity: 1;
+}
+.deck-footer .footer-part-timeline > i {
+  width: 9px;
+  min-width: 4px;
+  height: 1px;
+  flex: 0 1 9px;
+  background: var(--line);
+}
+.footer-divider {
+  width: 1px;
+  height: 16px;
+  flex: 0 0 1px;
+  background: var(--line);
+}
+.deck-footer .slide-counter {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-weight: 950;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .deck-footer { max-width: calc(100vw - 190px); }
+  .deck-footer .footer-part-timeline { font-size: .49rem; gap: 4px; }
+  .deck-footer .footer-part-timeline > i { width: 6px; min-width: 3px; }
+}
 </style>
 
 </head>
@@ -2099,7 +2182,7 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
   <main id="deck" class="deck" tabindex="-1"></main>
 
   <div class="timer-badge" title="Chronomètre de présentation"><span id="timerText">00:00</span><button id="timerBtn" type="button" aria-label="Démarrer ou mettre en pause le chronomètre">▶</button><button id="timerReset" type="button" aria-label="Réinitialiser le chronomètre">↺</button></div>
-  <div class="deck-footer" aria-live="polite"><span id="sectionName">Introduction</span><span class="dot"></span><span id="slideCounter">1 / 32</span></div>
+  <div class="deck-footer" aria-live="polite"><span id="footerTimeline" class="footer-timeline-slot"></span><span class="footer-divider" aria-hidden="true"></span><span id="slideCounter" class="slide-counter">1 / 32</span></div>
   <div class="nav-arrows" aria-label="Navigation"><button id="prevBtn" type="button" aria-label="Slide précédente">←</button><button id="nextBtn" type="button" aria-label="Slide suivante">→</button></div>
   <div class="footer-progress" aria-hidden="true"><div id="progressBar"></div></div>
   <div class="toast" id="toast"></div>
@@ -2169,11 +2252,11 @@ function partTimelineFor(index){
   }
   return null;
 }
-function renderPartTimeline(index,s){
+function renderPartTimeline(index){
   const t=partTimelineFor(index);
-  if(!t) return s.kicker||s.section;
+  if(!t) return '';
   const label=document.documentElement.lang==='en'?'Section progress':'Progression de la partie';
-  return `<div class="part-timeline" aria-label="${label}">${t.steps.map((step,j)=>`<span class="part-step${j===t.active?' active':''}">${step}</span>`).join('<i aria-hidden="true"></i>')}</div>`;
+  return `<div class="part-timeline footer-part-timeline" aria-label="${label}">${t.steps.map((step,j)=>`<span class="part-step${j===t.active?' active':''}">${step}</span>`).join('<i aria-hidden="true"></i>')}</div>`;
 }
 
 function studyAxisBadgeFor(s){
@@ -2199,7 +2282,9 @@ function studyAxisBadgeFor(s){
       if(s.divider) classes.push('section-divider-slide');
       if(s.appendix) classes.push('appendix');
       if(i===current) classes.push('active');
-      const inner = s.hero ? `<div class="slide-shell">${s.content}</div>` : `<div class="slide-shell"><div class="slide-kicker${partTimelineFor(i)?' part-timeline-slot':''}">${renderPartTimeline(i,s)}${studyAxisBadgeFor(s)}</div><h2>${s.title}</h2>${s.lead?`<p class="lead">${s.lead}</p>`:''}<div class="slide-content">${s.content||''}</div></div>`;
+      const axisBadge=studyAxisBadgeFor(s);
+      const topMarker=axisBadge||(s.kicker||s.section);
+      const inner = s.hero ? `<div class="slide-shell">${s.content}</div>` : `<div class="slide-shell"><div class="slide-kicker${axisBadge?' axis-slot':''}">${topMarker}</div><h2>${s.title}</h2>${s.lead?`<p class="lead">${s.lead}</p>`:''}<div class="slide-content">${s.content||''}</div></div>`;
       return `<section class="${classes.join(' ')}" id="slide-${i+1}" data-index="${i}" aria-label="Slide ${i+1} - ${esc(s.title)}">${inner}</section>`;
     }).join('');
     renderNavigator(); renderOverview();
@@ -2222,7 +2307,7 @@ function studyAxisBadgeFor(s){
   function updateUI(){
     const vis=visibleIndexes(); const pos=Math.max(0,vis.indexOf(current));
     document.getElementById('slideCounter').textContent=`${pos+1} / ${vis.length}`;
-    document.getElementById('sectionName').textContent=slides[current].section;
+    document.getElementById('footerTimeline').innerHTML=renderPartTimeline(current);
     document.getElementById('progressBar').style.width=`${((pos+1)/vis.length)*100}%`;
     document.getElementById('notesBody').innerHTML=`<strong>${slides[current].title}</strong><br><br>${slides[current].notes||'Aucune note spécifique.'}`;
     document.querySelectorAll('.slide-link').forEach(b=>b.classList.toggle('active',Number(b.dataset.index)===current));
