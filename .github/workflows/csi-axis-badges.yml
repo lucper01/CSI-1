@@ -1,0 +1,120 @@
+name: Add study axis badges
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-axis-badges.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add discreet axis badges
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          p = Path('index.html')
+          save = Path('index_save.html')
+          before_save = hashlib.sha256(save.read_bytes()).hexdigest()
+          text = p.read_text(encoding='utf-8')
+
+          css_marker = '/* CSI_STUDY_AXIS_BADGE */'
+          css = r'''
+/* CSI_STUDY_AXIS_BADGE */
+.slide-kicker.part-timeline-slot {
+  gap: 12px !important;
+}
+.slide-kicker.part-timeline-slot .part-timeline {
+  flex: 1 1 auto;
+  width: auto;
+}
+.study-axis-badge {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
+  color: var(--accent-strong);
+  font-size: .54rem;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: .07em;
+  white-space: nowrap;
+  cursor: help;
+}
+.study-axis-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .study-axis-badge { font-size: .48rem; padding: 3px 6px; }
+}
+'''
+          if css_marker not in text:
+              pos = text.rfind('</style>')
+              assert pos != -1, 'No style closing tag found'
+              text = text[:pos] + css + text[pos:]
+
+          anchor = '''function renderPartTimeline(index,s){
+  const t=partTimelineFor(index);
+  if(!t) return s.kicker||s.section;
+  const label=document.documentElement.lang==='en'?'Section progress':'Progression de la partie';
+  return `<div class="part-timeline" aria-label="${label}">${t.steps.map((step,j)=>`<span class="part-step${j===t.active?' active':''}">${step}</span>`).join('<i aria-hidden="true"></i>')}</div>`;
+}
+'''
+          assert anchor in text, 'Timeline render anchor not found'
+
+          if 'function studyAxisBadgeFor(s)' not in text:
+              addition = r'''
+function studyAxisBadgeFor(s){
+  const study=String(s.study||'').toUpperCase();
+  if(!study) return '';
+  const axis1=new Set(['TWIXAV','SOFT','TWIXOLF','SOLAR','SORBET']);
+  const axis2=new Set(['VIBEX','OASIS','BRAUD','BRAUDOLF','COBEX']);
+  const axis=axis1.has(study)?1:(axis2.has(study)?2:0);
+  if(!axis) return '';
+  const E=document.documentElement.lang==='en';
+  const short=E?`AXIS ${axis}`:`AXE ${axis}`;
+  const full=axis===1
+    ? (E?'Spatio-temporal limits of olfaction vs those of vision and audition':'Limites spatio-temporelles de l’olfaction vs celles de la vision et de l’audition')
+    : (E?'Influence of odors on spatio-temporal perception in vision and audition':'Influence des odeurs sur la perception spatio-temporelle en vision et en audition');
+  return `<span class="study-axis-badge" tabindex="0" title="${esc(full)}" aria-label="${esc(short+' - '+full)}">${short}</span>`;
+}
+'''
+              text = text.replace(anchor, anchor + addition, 1)
+
+          old = '''const inner = s.hero ? `<div class="slide-shell">${s.content}</div>` : `<div class="slide-shell"><div class="slide-kicker${partTimelineFor(i)?' part-timeline-slot':''}">${renderPartTimeline(i,s)}</div><h2>${s.title}</h2>${s.lead?`<p class="lead">${s.lead}</p>`:''}<div class="slide-content">${s.content||''}</div></div>`;'''
+          new = '''const inner = s.hero ? `<div class="slide-shell">${s.content}</div>` : `<div class="slide-shell"><div class="slide-kicker${partTimelineFor(i)?' part-timeline-slot':''}">${renderPartTimeline(i,s)}${studyAxisBadgeFor(s)}</div><h2>${s.title}</h2>${s.lead?`<p class="lead">${s.lead}</p>`:''}<div class="slide-content">${s.content||''}</div></div>`;'''
+          assert old in text or new in text, 'Slide render line not found'
+          text = text.replace(old, new, 1)
+
+          p.write_text(text, encoding='utf-8')
+          out = p.read_text(encoding='utf-8')
+          assert css_marker in out
+          assert 'function studyAxisBadgeFor(s)' in out
+          assert '${studyAxisBadgeFor(s)}' in out
+          assert "['TWIXAV','SOFT','TWIXOLF','SOLAR','SORBET']" in out
+          assert "['VIBEX','OASIS','BRAUD','BRAUDOLF','COBEX']" in out
+          assert hashlib.sha256(save.read_bytes()).hexdigest() == before_save
+          PY
+      - name: Verify frozen backup
+        shell: bash
+        run: git diff --exit-code -- index_save.html
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Add discreet axis badges to study slides"
+          git push
