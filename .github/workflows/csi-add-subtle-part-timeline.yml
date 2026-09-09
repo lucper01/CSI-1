@@ -1,0 +1,113 @@
+name: Add subtle part timeline
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-add-subtle-part-timeline.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add subtle timeline to relevant slides
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re, hashlib
+
+          p = Path('index.html')
+          save = Path('index_save.html')
+          save_hash = hashlib.sha256(save.read_bytes()).hexdigest()
+          text = p.read_text(encoding='utf-8')
+          styles_before = re.findall(r'<style\b[^>]*>.*?</style>', text, flags=re.S|re.I)
+          marker = 'const slides = '
+          st = text.index(marker) + len(marker)
+          slides, rel = json.JSONDecoder().raw_decode(text[st:])
+
+          timeline_re = re.compile(r'<div aria-label="Repère de partie"[^>]*>.*?</div>', re.S)
+
+          labels_fr = ['THÉORIE','ARCHITECTURE','ANNÉE 1','ANNÉE 2','PERSPECTIVES','PLANNING']
+          labels_en = ['THEORY','ARCHITECTURE','YEAR 1','YEAR 2','PERSPECTIVES','PLANNING']
+
+          def part_for(slide, lang):
+              vals = []
+              for key in ('chapter','section','title','kicker'):
+                  v = slide.get(key)
+                  if isinstance(v, str): vals.append(v.lower())
+              d = slide.get(lang) or {}
+              for key in ('section','title','kicker'):
+                  v = d.get(key)
+                  if isinstance(v, str): vals.append(v.lower())
+              s = ' | '.join(vals)
+              if any(x in s for x in ['cadre théorique','theoretical','introduction générale','general introduction']): return 0
+              if 'architecture' in s or 'question scientifique' in s or 'scientific question' in s: return 1
+              if any(x in s for x in ['année 1','première année','year 1','études de l’année 1','year 1 studies','transition vers la deuxième année']): return 2
+              if any(x in s for x in ['année 2','deuxième année','year 2','transition vers l’année 2','transition vers l’année 2']): return 3
+              if any(x in s for x in ['compléments','extensions','perspectives','after core studies']): return 4
+              if any(x in s for x in ['rétroplanning','calendrier','timeline','planning']): return 5
+              return None
+
+          def timeline(active, lang):
+              labels = labels_fr if lang == '_fr' else labels_en
+              spans = []
+              for i, label in enumerate(labels):
+                  if i == active:
+                      spans.append(f'<span style="color:var(--accent-strong);font-weight:900;white-space:nowrap">{label}</span>')
+                  else:
+                      spans.append(f'<span style="color:var(--muted);font-weight:760;opacity:.54;white-space:nowrap">{label}</span>')
+              sep = '<i aria-hidden="true" style="width:11px;height:1px;background:var(--line);flex:0 0 auto"></i>'
+              return '<div aria-label="Repère de partie" style="display:flex;align-items:center;gap:6px;margin:0 0 10px;font-size:.58rem;line-height:1;letter-spacing:.055em;text-transform:uppercase;overflow:hidden">' + sep.join(spans) + '</div>'
+
+          changed = 0
+          for slide in slides:
+              if slide.get('appendix') or slide.get('divider') or slide.get('hero'):
+                  continue
+              for lang in ('_fr','_en'):
+                  d = slide.get(lang)
+                  if not d or not isinstance(d.get('content'), str):
+                      continue
+                  active = part_for(slide, lang)
+                  if active is None:
+                      continue
+                  c = timeline_re.sub('', d['content'])
+                  d['content'] = timeline(active, lang) + c
+                  changed += 1
+              if slide.get('_fr'):
+                  slide.update(slide['_fr'])
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          new_text = text[:st] + new_json + text[st+rel:]
+          assert re.findall(r'<style\b[^>]*>.*?</style>', new_text, flags=re.S|re.I) == styles_before
+          p.write_text(new_text, encoding='utf-8')
+          assert hashlib.sha256(save.read_bytes()).hexdigest() == save_hash
+
+          # Checks: no duplicate timeline per localized slide.
+          for slide in slides:
+              for lang in ('_fr','_en'):
+                  d = slide.get(lang) or {}
+                  c = d.get('content','')
+                  assert c.count('aria-label="Repère de partie"') <= 1
+          print('Localized slide variants updated:', changed)
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', t, flags=re.S|re.I)
+          assert scripts
+          Path('/tmp/csi.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/csi.js
+      - name: Verify frozen backup
+        run: |
+          test "$(git hash-object index_save.html)" = "0cf6cb4e08ec3da2bb94c7de2c62ddd154d4c365"
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add subtle part timeline to CSI slides"
+          git push
