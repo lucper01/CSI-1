@@ -2283,15 +2283,12 @@ function partTimelineFor(index){
     const active=n<=46?0:n-47;
     return {steps,active};
   }
-  if(n>=53&&n<=55){
-    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-53};
+  if(n>=52&&n<=54){
+    return {steps:E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'],active:n-52};
   }
 
-  if(n>=52&&n<=53){
-    return {steps:E?['YEAR 3','ACTIVITIES']:['3ÈME ANNÉE','ACTIVITÉS'],active:n-52};
-  }
-  if(n>=56&&n<=58){
-    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-56};
+  if(n>=55&&n<=57){
+    return {steps:E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'],active:n-55};
   }
   return null;
 }
