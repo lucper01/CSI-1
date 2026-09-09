@@ -1,0 +1,26 @@
+name: Remove year 2 communications note
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_remove_year2_comm_note.py'
+      - '.github/workflows/csi-remove-year2-comm-note.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove note
+        run: python .github/scripts/csi_remove_year2_comm_note.py
+      - name: Verify frozen checkpoint
+        run: git diff --exit-code -- index_save.html
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Remove year 2 communications note"
+          git push
