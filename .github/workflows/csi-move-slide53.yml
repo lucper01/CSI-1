@@ -30,21 +30,22 @@ jobs:
           def title(s):
               return s.get('title') or s.get('_fr', {}).get('title') or ''
 
-          visible_positions = [i for i, s in enumerate(slides) if not s.get('appendix')]
-          assert len(visible_positions) >= 53, len(visible_positions)
-
-          current_titles = [title(slides[i]) for i in visible_positions]
+          visible = [s for s in slides if not s.get('appendix')]
+          assert len(visible) >= 53, len(visible)
+          current_titles = [title(s) for s in visible]
           target_title = 'Activités doctorales prévues - 2027-2028'
-          assert current_titles[52] == target_title, (53, current_titles[52])
+          matches = [s for s in visible if title(s) == target_title]
+          assert len(matches) == 1, len(matches)
 
-          anchor = slides[visible_positions[49]]
-          old_51 = slides[visible_positions[50]]
-          target = slides[visible_positions[52]]
+          anchor = visible[49]      # current slide 50
+          old_51 = visible[50]      # current slide 51
+          target = matches[0]
+          assert target is not anchor and target is not old_51
 
-          print('Before:')
-          for n in range(48, 55):
-              if n <= len(current_titles):
-                  print(n, current_titles[n-1])
+          target_old_pos = visible.index(target) + 1
+          print('Target old position:', target_old_pos)
+          print('Current slide 50:', title(anchor))
+          print('Current slide 51:', title(old_51))
 
           original_multiset = Counter(json.dumps(s, ensure_ascii=False, sort_keys=True, separators=(',', ':')) for s in slides)
           original_style = re.findall(r'<style\b[^>]*>(.*?)</style>', before, flags=re.S | re.I)
@@ -57,11 +58,9 @@ jobs:
           slides.insert(anchor_index + 1, target)
 
           new_visible = [s for s in slides if not s.get('appendix')]
-          new_titles = [title(s) for s in new_visible]
           assert new_visible[49] is anchor
           assert new_visible[50] is target
           assert new_visible[51] is old_51
-          assert new_titles[50] == target_title
 
           new_multiset = Counter(json.dumps(s, ensure_ascii=False, sort_keys=True, separators=(',', ':')) for s in slides)
           assert new_multiset == original_multiset
@@ -73,10 +72,9 @@ jobs:
           assert after.endswith(suffix)
           path.write_text(after, encoding='utf-8')
 
-          print('After:')
-          for n in range(48, 55):
-              if n <= len(new_titles):
-                  print(n, new_titles[n-1])
+          print('New slide 50:', title(new_visible[49]))
+          print('New slide 51:', title(new_visible[50]))
+          print('New slide 52:', title(new_visible[51]))
 
           scripts = re.findall(r'<script\b[^>]*>(.*?)</script>', after, flags=re.S | re.I)
           for i, script in enumerate(scripts):
