@@ -1,0 +1,26 @@
+name: Move timeline to footer
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-footer-timeline-axis.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move timeline to footer and axis to top
+        shell: bash
+        run: python -c "import base64;exec(base64.b64decode('CkZST01fQkFTRTY0X1NDUklQVAp'))"
+      - name: Verify frozen backup
+        run: git diff --exit-code -- index_save.html
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Move local timeline to footer and axis badge to top"
+          git push
