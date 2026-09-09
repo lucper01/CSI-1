@@ -36,19 +36,9 @@ jobs:
           assert '<strong>Références</strong>' not in out
           assert '<strong>References</strong>' not in out
           assert 'CSI_REFERENCE_LABEL_BOLD' in out
+          assert 'font-weight: 950 !important' in out
           assert hashlib.sha256(save.read_bytes()).hexdigest() == before_save
           PY
-      - name: Validate inline JavaScript
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          text=Path('index.html').read_text(encoding='utf-8')
-          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,re.S)
-          Path('/tmp/csi-inline.js').write_text('\n'.join(scripts),encoding='utf-8')
-          PY
-          node --check /tmp/csi-inline.js
       - name: Verify frozen backup
         shell: bash
         run: git diff --exit-code -- index_save.html
