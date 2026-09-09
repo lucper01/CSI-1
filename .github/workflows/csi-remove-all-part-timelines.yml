@@ -1,0 +1,76 @@
+name: Remove all part timelines
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-remove-all-part-timelines.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove timeline strips from every slide
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re, hashlib
+
+          p = Path('index.html')
+          save = Path('index_save.html')
+          save_hash = hashlib.sha256(save.read_bytes()).hexdigest()
+          text = p.read_text(encoding='utf-8')
+          styles_before = re.findall(r'<style\b[^>]*>.*?</style>', text, flags=re.S|re.I)
+
+          marker = 'const slides = '
+          start = text.index(marker) + len(marker)
+          slides, rel_end = json.JSONDecoder().raw_decode(text[start:])
+
+          timeline_re = re.compile(r'<div aria-label="Timeline de la partie"[^>]*>.*?</div>', re.S)
+          changed = 0
+          for s in slides:
+              # Root content (French working copy)
+              if isinstance(s.get('content'), str):
+                  new = timeline_re.sub('', s['content'])
+                  if new != s['content']:
+                      s['content'] = new
+                      changed += 1
+              # Localized variants
+              for lang in ('_fr', '_en'):
+                  block = s.get(lang)
+                  if isinstance(block, dict) and isinstance(block.get('content'), str):
+                      new = timeline_re.sub('', block['content'])
+                      if new != block['content']:
+                          block['content'] = new
+                          changed += 1
+
+          new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
+          new_text = text[:start] + new_json + text[start + rel_end:]
+
+          assert 'Timeline de la partie' not in new_json
+          assert re.findall(r'<style\b[^>]*>.*?</style>', new_text, flags=re.S|re.I) == styles_before
+          assert hashlib.sha256(save.read_bytes()).hexdigest() == save_hash
+          p.write_text(new_text, encoding='utf-8')
+          print('Timeline blocks removed:', changed)
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          t = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', t, flags=re.S|re.I)
+          assert scripts
+          Path('/tmp/csi.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/csi.js
+      - name: Verify frozen backup
+        run: |
+          test "$(git hash-object index_save.html)" = "0cf6cb4e08ec3da2bb94c7de2c62ddd154d4c365"
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Remove timeline strips from all CSI slides"
+          git push
