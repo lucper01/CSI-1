@@ -16,10 +16,10 @@ end = start + rel_end
 year3_candidates = []
 for i, s in enumerate(slides):
     blob = json.dumps(s, ensure_ascii=False)
-    if ('DocAdoct' in blob or 'FJC 2028' in blob or 'ISOT 2028' in blob) and ('Troisième année' in blob or 'Year 3' in blob):
+    if ('DocAdoct' in blob or 'FJC 2028' in blob or 'ISOT 2028' in blob) and ('Troisième année' in blob or 'Year 3' in blob or 'Third year' in blob):
         year3_candidates.append((i, s))
 assert len(year3_candidates) == 1, [s.get('title') for _, s in year3_candidates]
-year3_idx, year3_slide = year3_candidates[0]
+year3_slide = year3_candidates[0][1]
 
 # Remove any previous year 3 divider if this script is re-run.
 slides = [s for s in slides if not (
@@ -41,22 +41,8 @@ year3_divider = {
     'appendix': False,
     'hero': True,
     'divider': True,
-    '_fr': {
-        'section': 'Troisième année',
-        'kicker': '',
-        'title': 'Troisième année',
-        'lead': '',
-        'content': fr_content,
-        'notes': ''
-    },
-    '_en': {
-        'section': 'Third year',
-        'kicker': '',
-        'title': 'Third year',
-        'lead': '',
-        'content': en_content,
-        'notes': ''
-    },
+    '_fr': {'section': 'Troisième année', 'kicker': '', 'title': 'Troisième année', 'lead': '', 'content': fr_content, 'notes': ''},
+    '_en': {'section': 'Third year', 'kicker': '', 'title': 'Third year', 'lead': '', 'content': en_content, 'notes': ''},
     'section': 'Troisième année',
     'kicker': '',
     'title': 'Troisième année',
@@ -68,33 +54,26 @@ year3_divider = {
 # Insert between visible slides 51 and 52, i.e. after the 51st non-appendix slide.
 visible_indices = [i for i, s in enumerate(slides) if not s.get('appendix')]
 assert len(visible_indices) >= 52, len(visible_indices)
-insert_after_visible = 51
-insert_pos = visible_indices[insert_after_visible - 1] + 1
+insert_pos = visible_indices[50] + 1
 slides[insert_pos:insert_pos] = [year3_divider, year3_slide]
 
 # Keep the year 3 activity slide explicitly attached to the new section.
+year3_slide['chapter'] = 'Troisième année'
 for key in (None, '_fr', '_en'):
     d = year3_slide if key is None else year3_slide.get(key, {})
     if not d:
         continue
-    if key == '_en':
-        d['section'] = 'Third year'
-    else:
-        d['section'] = 'Troisième année'
+    d['section'] = 'Third year' if key == '_en' else 'Troisième année'
 
-# Shift timeline numerical ranges because one visible divider was inserted at position 52,
-# and the year 3 activity slide was moved after it. It gets its own local timeline.
 new_json = json.dumps(slides, ensure_ascii=False, separators=(',', ':'))
 text = text[:start] + new_json + text[end:]
 
+# Recalibrate the local timelines: insert a small year-3 block before the existing end blocks.
 fn_start = text.index('function partTimelineFor(index){')
 fn_end = text.index('\nfunction renderPartTimeline', fn_start)
 fn = text[fn_start:fn_end]
-
-# Remove previous year 3 timeline block if present.
 fn = re.sub(r"\n  if\(n>=52&&n<=53\)\{\n    return \{steps:E\?\['YEAR 3','ACTIVITIES'\]:\['3ÈME ANNÉE','ACTIVITÉS'\],active:n-52\};\n  \}", '', fn)
 
-# Shift all slide-number references from 52 onward by +1, then add a block for new slides 52-53.
 def shift_match(m):
     op = m.group(1)
     num = int(m.group(2))
@@ -103,10 +82,11 @@ def shift_match(m):
     return f'n{op}{num}'
 fn = re.sub(r'n(>=|<=|===)(\d+)', shift_match, fn)
 insert_block = "\n  if(n>=52&&n<=53){\n    return {steps:E?['YEAR 3','ACTIVITIES']:['3ÈME ANNÉE','ACTIVITÉS'],active:n-52};\n  }"
-anchor = '  if(n>=54&&n<=56){'
-# After shifting, the previous planning block starts at 54; insert just before it.
-assert anchor in fn
-fn = fn.replace(anchor, insert_block + '\n' + anchor, 1)
+# Put this block immediately before the first shifted block after slide 53.
+pos_candidates = [p for p in [fn.find('  if(n>=54'), fn.find('  if(n>=55'), fn.find('  if(n>=56'), fn.find('  if(n>=57')] if p != -1]
+assert pos_candidates, fn[-700:]
+pos = min(pos_candidates)
+fn = fn[:pos] + insert_block + '\n' + fn[pos:]
 text = text[:fn_start] + fn + text[fn_end:]
 
 # Checks.
@@ -115,6 +95,7 @@ assert visible[51][1].get('title') == 'Troisième année', visible[51][1].get('t
 assert visible[52][1] is year3_slide
 assert 'DocAdoct' in json.dumps(visible[52][1], ensure_ascii=False)
 assert 'PARTIE 6' in json.dumps(visible[51][1], ensure_ascii=False)
+assert "if(n>=52&&n<=53)" in text
 assert hashlib.sha256(save.read_bytes()).hexdigest() == save_before
 
 index.write_text(text, encoding='utf-8')
