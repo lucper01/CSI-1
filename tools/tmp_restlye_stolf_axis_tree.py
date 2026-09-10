@@ -1,0 +1,90 @@
+from pathlib import Path
+import json, re, subprocess
+
+p = Path("index.html")
+text = p.read_text(encoding="utf-8")
+marker = "const slides = "
+pos = text.index(marker) + len(marker)
+slides, consumed = json.JSONDecoder().raw_decode(text[pos:])
+main = [s for s in slides if not s.get("appendix", False)]
+targets = [s for s in main if s.get("_fr", {}).get("title") == "STOLF - des axes aux études"]
+assert len(targets) == 1
+target = targets[0]
+
+fr = r'''<style>
+.stolf-flow{width:min(1040px,94%);margin:2px auto 0;position:relative}
+.stolf-flow *{box-sizing:border-box}
+.stolf-flow .root-wrap{position:relative;display:flex;justify-content:center;margin-bottom:26px}
+.stolf-flow .root-wrap:after{content:"";position:absolute;left:50%;top:68px;width:2px;height:30px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
+.stolf-flow .root{position:relative;z-index:2;min-width:280px;padding:13px 28px;border-radius:999px;text-align:center;background:linear-gradient(135deg,var(--accent-strong),var(--accent));color:#fff;font-weight:950;font-size:1.7rem;letter-spacing:.055em;box-shadow:var(--shadow-soft)}
+.stolf-flow .axes{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:46px}
+.stolf-flow .axes:before{content:"";position:absolute;left:25%;right:25%;top:-14px;height:2px;background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
+.stolf-flow .axis{position:relative;display:flex;flex-direction:column;align-items:center}
+.stolf-flow .axis:before{content:"";position:absolute;top:-14px;left:50%;width:2px;height:24px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
+.stolf-flow .axis-head{position:relative;z-index:2;width:min(390px,100%);padding:14px 18px;border-radius:22px;background:var(--white);border:1px solid var(--line);box-shadow:var(--shadow-soft);text-align:center}
+.stolf-flow .axis-tag{display:inline-flex;padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong);font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.stolf-flow .axis-head h3{margin:8px 0 0;color:var(--accent-strong);font:800 1.08rem Georgia,"Times New Roman",serif;line-height:1.2}
+.stolf-flow .chain{width:min(300px,86%);margin-top:13px;display:grid;gap:13px}
+.stolf-flow .study-node{--study:var(--accent);position:relative;display:grid;place-items:center;min-height:48px;padding:10px 16px;border-radius:18px;background:var(--study);border:1px solid var(--study);color:#fff;font-weight:950;font-size:1rem;letter-spacing:.025em;text-align:center;box-shadow:0 8px 22px color-mix(in srgb,var(--study) 20%,transparent)}
+.stolf-flow .study-node:not(:last-child):after{content:"";position:absolute;left:50%;top:100%;width:2px;height:13px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 28%,transparent)}
+.stolf-flow .study-node:not(:last-child):before{content:"";position:absolute;z-index:3;left:50%;top:calc(100% + 8px);width:7px;height:7px;border-right:2px solid color-mix(in srgb,var(--accent-strong) 45%,transparent);border-bottom:2px solid color-mix(in srgb,var(--accent-strong) 45%,transparent);transform:translateX(-50%) rotate(45deg)}
+.stolf-flow .study-node.faded{opacity:.36}
+.stolf-flow .study-node.focus{opacity:1}
+.stolf-flow .twixav{--study:#2f6f9f}.stolf-flow .soft{--study:#7652a8}.stolf-flow .twixolf{--study:#c36c32}.stolf-flow .solar{--study:#d09422}.stolf-flow .vibex{--study:#2f7d5a}.stolf-flow .vibolf{--study:#b44e6c}.stolf-flow .braud{--study:#4f7187}.stolf-flow .braudolf{--study:#875a7c}
+@media(max-width:900px){.stolf-flow{width:100%}.stolf-flow .axes{gap:24px}.stolf-flow .axis-head h3{font-size:.92rem}.stolf-flow .chain{width:90%}.stolf-flow .study-node{font-size:.88rem;min-height:44px}}
+</style>
+<div class="stolf-flow">
+  <div class="root-wrap"><div class="root">STOLF</div></div>
+  <div class="axes">
+    <section class="axis">
+      <div class="axis-head"><span class="axis-tag">Axe 1</span><h3>Relations spatio-temporelles entre olfaction, vision et audition</h3></div>
+      <div class="chain">
+        <div class="study-node twixav faded">TWIXAV</div>
+        <div class="study-node soft faded">SOFT</div>
+        <div class="study-node twixolf faded">TWIXOLF</div>
+        <div class="study-node solar focus">SOLAR</div>
+      </div>
+    </section>
+    <section class="axis">
+      <div class="axis-head"><span class="axis-tag">Axe 2</span><h3>Influence des odeurs sur la perception spatio-temporelle</h3></div>
+      <div class="chain">
+        <div class="study-node vibex faded">VIBEX</div>
+        <div class="study-node vibolf faded">VIBOLF</div>
+        <div class="study-node braud focus">BRAUD</div>
+        <div class="study-node braudolf focus">BRAUDOLF</div>
+      </div>
+    </section>
+  </div>
+</div>'''
+
+en = fr.replace("Axe 1","Axis 1").replace("Axe 2","Axis 2").replace("Relations spatio-temporelles entre olfaction, vision et audition","Spatio-temporal relations between olfaction, vision and audition").replace("Influence des odeurs sur la perception spatio-temporelle","Influence of odors on spatio-temporal perception")
+
+target["_fr"]["content"] = fr
+target["_en"]["content"] = en
+target["content"] = fr
+target["_fr"]["notes"] = "Schéma des deux axes. Les couleurs d’étude sont celles du CSI. TWIXAV, SOFT, TWIXOLF, VIBEX et VIBOLF sont atténués uniquement par transparence ; SOLAR, BRAUD et BRAUDOLF restent en pleine opacité."
+target["_en"]["notes"] = "Two-axis diagram. Study colors match the CSI palette. TWIXAV, SOFT, TWIXOLF, VIBEX and VIBOLF are faded only through opacity; SOLAR, BRAUD and BRAUDOLF remain fully opaque."
+target["notes"] = target["_fr"]["notes"]
+
+new_array = json.dumps(slides, ensure_ascii=False, indent=2)
+p.write_text(text[:pos] + new_array + text[pos+consumed:], encoding="utf-8")
+
+text2 = p.read_text(encoding="utf-8")
+pos2 = text2.index(marker) + len(marker)
+slides2, _ = json.JSONDecoder().raw_decode(text2[pos2:])
+main2 = [s for s in slides2 if not s.get("appendix", False)]
+targets2 = [s for s in main2 if s.get("_fr", {}).get("title") == "STOLF - des axes aux études"]
+assert len(targets2) == 1
+c = targets2[0]["_fr"]["content"]
+for hx in ("#2f6f9f","#7652a8","#c36c32","#2f7d5a","#b44e6c","#d09422","#4f7187","#875a7c"):
+    assert hx in c
+assert ".study-node.faded{opacity:.36}" in c
+assert 'class="study-node solar focus"' in c
+assert 'class="study-node braud focus"' in c
+assert 'class="study-node braudolf focus"' in c
+scripts = re.findall(r"<script>(.*?)</script>", text2, flags=re.S)
+matches = [x for x in scripts if "const slides = [" in x]
+assert len(matches) == 1
+Path("/tmp/slides.js").write_text(matches[0], encoding="utf-8")
+subprocess.run(["node","--check","/tmp/slides.js"], check=True)
+print("RESTYLE_OK")
