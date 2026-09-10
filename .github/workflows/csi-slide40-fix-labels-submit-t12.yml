@@ -1,0 +1,124 @@
+name: CSI slide40 fix labels and thesis submission
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-slide40-fix-labels-submit-t12.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save
+        run: echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Fix slide 40 labels and move thesis submission
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          pos = text.index(marker) + len(marker)
+          slides, consumed = json.JSONDecoder().raw_decode(text[pos:])
+          main = [s for s in slides if not s.get('appendix', False)]
+          if len(main) < 40:
+              raise RuntimeError(f'Expected at least 40 main slides, found {len(main)}')
+          target = main[39]
+          if target.get('title') != 'Planification - les trois années de thèse':
+              raise RuntimeError(f'Unexpected slide 40: {target.get("title")}')
+
+          def patch(content, lang):
+              old_evt = '.csi-plan12 .evt{display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 5px;border-radius:10px;background:var(--white);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 7%,transparent);font-weight:850;line-height:1.12;white-space:normal;overflow-wrap:anywhere;min-width:0}'
+              new_evt = '.csi-plan12 .evt{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5px 6px;border-radius:10px;background:var(--white);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 7%,transparent);font-weight:850;line-height:1.08;white-space:normal;overflow-wrap:normal;word-break:normal;hyphens:none;min-width:0;min-height:40px}'
+              if old_evt not in content:
+                  raise RuntimeError(f'Event CSS pattern not found for {lang}')
+              content = content.replace(old_evt, new_evt, 1)
+
+              old_name = '.csi-plan12 .evt .ev-name{display:block;font-weight:900;line-height:1.03}'
+              new_name = '.csi-plan12 .evt .ev-name{display:block;width:100%;font-weight:900;line-height:1.04;overflow-wrap:normal;word-break:normal;hyphens:none}'
+              if old_name not in content:
+                  raise RuntimeError(f'ev-name CSS pattern not found for {lang}')
+              content = content.replace(old_name, new_name, 1)
+
+              old_sub = '.csi-plan12 .evt .ev-sub{display:block;margin-top:3px;font-size:.82em;font-weight:800;line-height:1.03;color:inherit}'
+              new_sub = '.csi-plan12 .evt .ev-sub{display:block;width:100%;margin-top:3px;font-size:.78em;font-weight:800;line-height:1.04;color:inherit;overflow-wrap:normal;word-break:normal;hyphens:none}'
+              if old_sub not in content:
+                  raise RuntimeError(f'ev-sub CSS pattern not found for {lang}')
+              content = content.replace(old_sub, new_sub, 1)
+
+              if lang == 'fr':
+                  old_submit = '<div class="evt dark" style="grid-column:11;grid-row:1">Soumission<br>thèse</div>'
+                  new_submit = '<div class="evt dark" style="grid-column:12;grid-row:1">Soumission<br>thèse</div>'
+              else:
+                  old_submit = '<div class="evt dark" style="grid-column:11;grid-row:1">Thesis<br>submission</div>'
+                  new_submit = '<div class="evt dark" style="grid-column:12;grid-row:1">Thesis<br>submission</div>'
+              if old_submit not in content:
+                  raise RuntimeError(f'Thesis submission block not found for {lang}')
+              content = content.replace(old_submit, new_submit, 1)
+              return content
+
+          fr = patch(target['_fr']['content'], 'fr')
+          en = patch(target['_en']['content'], 'en')
+          target['_fr']['content'] = fr
+          target['content'] = fr
+          target['_en']['content'] = en
+          target['_fr']['notes'] = target['_fr']['notes'].replace('Soumission de thèse en T11', 'Soumission de thèse en T12') if 'Soumission de thèse en T11' in target['_fr']['notes'] else target['_fr']['notes']
+          target['notes'] = target['_fr']['notes']
+          target['_en']['notes'] = target['_en']['notes'].replace('Thesis submission in Q11', 'Thesis submission in Q12') if 'Thesis submission in Q11' in target['_en']['notes'] else target['_en']['notes']
+
+          new_array = json.dumps(slides, ensure_ascii=False, indent=2)
+          p.write_text(text[:pos] + new_array + text[pos+consumed:], encoding='utf-8')
+          PY
+      - name: Validate main slides script and requested changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+          s = Path('index.html').read_text(encoding='utf-8')
+          marker = 'const slides = '
+          pos = s.index(marker) + len(marker)
+          slides, _ = json.JSONDecoder().raw_decode(s[pos:])
+          main = [x for x in slides if not x.get('appendix', False)]
+          target = main[39]
+          fr = target['_fr']['content']
+          en = target['_en']['content']
+          required_fr = [
+              'flex-direction:column',
+              'overflow-wrap:normal;word-break:normal;hyphens:none',
+              'grid-column:12;grid-row:1">Soumission<br>thèse',
+              'grid-column:7;grid-row:1"><span class="ev-name">VIBEX +<br>VIBOLF</span><span class="ev-sub">rédaction</span>',
+              'grid-column:8;grid-row:1"><span class="ev-name">VIBEX +<br>VIBOLF</span><span class="ev-sub">publication</span>'
+          ]
+          for x in required_fr:
+              if x not in fr:
+                  raise RuntimeError(f'Missing requested FR change: {x}')
+          if 'grid-column:11;grid-row:1">Soumission<br>thèse' in fr:
+              raise RuntimeError('Old T11 thesis submission remains in FR')
+          if 'grid-column:11;grid-row:1">Thesis<br>submission' in en:
+              raise RuntimeError('Old Q11 thesis submission remains in EN')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
+          js = [x for x in scripts if 'const slides = [' in x]
+          if len(js) != 1:
+              raise RuntimeError('Main slides script not found uniquely')
+          Path('/tmp/slides.js').write_text(js[0], encoding='utf-8')
+          PY
+          node --check /tmp/slides.js
+      - name: Verify save untouched
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+      - name: Commit update and remove helper
+        run: |
+          git rm .github/workflows/csi-slide40-fix-labels-submit-t12.yml
+          git add index.html
+          git commit -m "Fix slide 40 labels and move thesis submission to T12"
+          git push
