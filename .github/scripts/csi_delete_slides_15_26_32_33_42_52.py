@@ -88,3 +88,4 @@ path.write_text(text, encoding='utf-8')
 for n, title in removed:
     print(f'Removed slide {n}: {title}')
 print(f'Removed {len(removed)} slides total')
+# trigger
