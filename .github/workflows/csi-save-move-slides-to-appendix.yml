@@ -1,0 +1,43 @@
+name: CSI save then move slides to appendix
+
+on:
+  push:
+    paths:
+      - '.github/trigger-csi-move-appendix.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Save current working deck
+        run: |
+          cp index.html index_save.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save CSI before moving slides to appendix"
+            git push
+          fi
+          echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+
+      - name: Move selected slides to appendix
+        run: python .github/scripts/csi_save_move_slides_to_appendix.py
+
+      - name: Verify save remains frozen
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+
+      - name: Commit working deck update
+        run: |
+          git add index.html
+          git commit -m "Move slides 26 36 40 41 to appendix"
+          git push
