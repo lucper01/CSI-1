@@ -1,5 +1,5 @@
 name: CSI slide 9 wording and part timeline
-# retry after fixing divider matcher
+# diagnostic retry
 on:
   push:
     paths:
@@ -33,7 +33,10 @@ jobs:
           end=text.find('</script>',m.start())
           js=text[start:end]
           p=Path('/tmp/csi_slides_script.js'); p.write_text(js,encoding='utf-8')
-          subprocess.run(['node','--check',str(p)],check=True)
+          r=subprocess.run(['node','--check',str(p)],capture_output=True,text=True)
+          if r.returncode:
+              Path('.github/node_check_error.txt').write_text(r.stdout+'\n'+r.stderr,encoding='utf-8')
+              raise SystemExit('Node validation failed; diagnostic file created')
           PY
       - name: Verify protected save untouched
         run: test "$(git hash-object index_save.html)" = "$SAVE_SHA"
@@ -48,3 +51,11 @@ jobs:
           git rm .github/scripts/csi_slide9_timeline_parts.py .github/workflows/csi-slide9-timeline-parts.yml
           git commit -m "Remove temporary slide 9 timeline helpers"
           git push
+      - name: Commit diagnostic on failure
+        if: failure()
+        run: |
+          if [ -f .github/node_check_error.txt ]; then
+            git add .github/node_check_error.txt
+            git commit -m "Record slide 9 timeline validation error" || true
+            git push || true
+          fi
