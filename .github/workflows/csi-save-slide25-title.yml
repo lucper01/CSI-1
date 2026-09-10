@@ -1,0 +1,60 @@
+name: CSI save slide25 title
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/csi-save-slide25-title.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Save current CSI working version
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp index.html index_save.html
+          git add index_save.html
+          git commit -m "Save CSI before slide 25 title update"
+          git push
+          git hash-object index_save.html > /tmp/save_sha
+      - name: Update slide 25 title
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = 'Enseignement, formation et encadrement'
+          new = 'Activités doctorales réalisées - 2025-2026'
+          count = s.count(old)
+          if count != 2:
+              raise SystemExit(f'Expected exactly 2 French title occurrences, found {count}')
+          s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Verify save stayed frozen
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object index_save.html)" = "$(cat /tmp/save_sha)"
+          grep -Fq 'Activités doctorales réalisées - 2025-2026' index.html
+          grep -Fq 'Enseignement, formation et encadrement' index_save.html
+      - name: Commit working update and clean helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/csi-save-slide25-title.yml
+          git add index.html
+          git commit -m "Rename slide 25 doctoral activities title"
+          git push
