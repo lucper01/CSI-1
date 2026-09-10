@@ -83,10 +83,10 @@ if not objects:
 main_indices = []
 appendix_indices = []
 for idx, obj in enumerate(objects):
+    # Historical slides may omit the flag: absence means a normal/main slide.
     m = re.search(r'"appendix"\s*:\s*(true|false)', obj)
-    if not m:
-        raise SystemExit(f'Slide object {idx+1} missing appendix flag')
-    (appendix_indices if m.group(1) == 'true' else main_indices).append(idx)
+    is_appendix = bool(m and m.group(1) == 'true')
+    (appendix_indices if is_appendix else main_indices).append(idx)
 
 # User numbering refers to the current main presentation before this move.
 target_numbers = [26, 36, 40, 41]
@@ -109,24 +109,29 @@ remaining = []
 target_set = set(target_object_indices)
 for idx, obj in enumerate(objects):
     if idx in target_set:
-        count = len(re.findall(r'"appendix"\s*:\s*false', obj))
-        if count != 1:
-            raise SystemExit(f'Slide target {idx+1} has {count} appendix:false flags')
-        obj = re.sub(r'"appendix"\s*:\s*false', '"appendix": true', obj, count=1)
+        m = re.search(r'"appendix"\s*:\s*(true|false)', obj)
+        if m:
+            if m.group(1) != 'false':
+                raise SystemExit(f'Target slide {idx+1} is already appendix')
+            obj = obj[:m.start()] + '"appendix": true' + obj[m.end():]
+        else:
+            # Insert an explicit appendix flag immediately after the opening brace.
+            insertion = '\n    "appendix": true,'
+            obj = obj[0] + insertion + obj[1:]
         moved.append(obj)
     else:
         remaining.append(obj)
 
-# Keep all existing slides in their relative order and append moved slides to the annexes block.
+# Keep all existing slides in their relative order and append moved slides at the end of the annexes.
 new_objects = remaining + moved
 new_body = '\n  ' + ',\n  '.join(obj.strip() for obj in new_objects) + '\n'
 new_text = text[:array_start] + new_body + text[array_end:]
 
-# Sanity checks.
 if new_text == text:
     raise SystemExit('No changes produced')
-main_after = len(main_indices) - len(target_numbers)
-print('Expected main slides after:', main_after)
+
+print('Main slides after:', len(main_indices) - len(target_numbers))
+print('Existing appendix slides before:', len(appendix_indices))
 print('Moved to appendix:', len(moved))
 
 path.write_text(new_text, encoding='utf-8')
