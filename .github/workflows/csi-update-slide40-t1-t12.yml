@@ -1,0 +1,116 @@
+name: CSI update slide40 T1-T12
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-update-slide40-t1-t12.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save
+        run: echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Update current main slide 40
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          pos = text.index(marker) + len(marker)
+          slides, consumed = json.JSONDecoder().raw_decode(text[pos:])
+          main = [s for s in slides if not s.get('appendix', False)]
+          if len(main) != 42:
+              raise RuntimeError(f'Expected 42 main slides, found {len(main)}')
+          target = main[39]
+          if target.get('title') != 'Planification - les trois années de thèse':
+              raise RuntimeError(f'Unexpected slide 40: {target.get("title")}')
+
+          style = '''<style>
+          .csi-plan12{font-size:.64rem}
+          .csi-plan12 .ph{display:grid;grid-template-columns:132px 1fr;gap:6px;margin-bottom:5px}
+          .csi-plan12 .years,.csi-plan12 .quarters{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+          .csi-plan12 .year{padding:6px 5px;border-radius:11px;text-align:center;font-weight:950;letter-spacing:.055em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent-strong);border:1px solid var(--line)}
+          .csi-plan12 .q{position:relative;padding:5px 2px;border-radius:9px;text-align:center;font-weight:900;background:var(--white);border:1px solid var(--line);color:var(--muted);min-height:31px}
+          .csi-plan12 .q.now{background:color-mix(in srgb,var(--accent) 12%,var(--white));color:var(--accent-strong);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+          .csi-plan12 .here{display:block;font-size:.54rem;line-height:1.05;margin-top:2px;color:var(--accent);font-weight:950;white-space:normal}
+          .csi-plan12 .lane{display:grid;grid-template-columns:132px 1fr;gap:6px;margin-top:6px}
+          .csi-plan12 .lab{display:flex;align-items:center;padding:8px 10px;border-radius:13px;background:var(--accent-pale);border:1px solid var(--line);font-weight:950;color:var(--accent-strong)}
+          .csi-plan12 .track{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(3,minmax(28px,auto));gap:4px;min-width:0}
+          .csi-plan12 .evt{display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 5px;border-radius:10px;background:var(--white);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 7%,transparent);font-weight:850;line-height:1.12;white-space:normal;overflow-wrap:anywhere;min-width:0}
+          .csi-plan12 .evt.soft{background:color-mix(in srgb,var(--accent) 8%,var(--white))}
+          .csi-plan12 .evt.dark{background:var(--accent-strong);color:#fff;border-color:transparent}
+          .csi-plan12 .evt.muted{opacity:.76;border-style:dashed}
+          .csi-plan12 .legend{margin-top:7px;text-align:right;color:var(--muted);font-size:.61rem}
+          </style>'''
+
+          q_fr = ''.join(f'<div class="q{" now" if i==4 else ""}">T{i}' + ('<span class="here">📍 VOUS ÊTES ICI</span>' if i==4 else '') + '</div>' for i in range(1,13))
+          q_en = ''.join(f'<div class="q{" now" if i==4 else ""}">Q{i}' + ('<span class="here">📍 YOU ARE HERE</span>' if i==4 else '') + '</div>' for i in range(1,13))
+
+          fr_content = style + f'''<div class="csi-plan12">
+          <div class="ph"><div></div><div class="years"><div class="year" style="grid-column:1/span 4">Année 1</div><div class="year" style="grid-column:5/span 4">Année 2</div><div class="year" style="grid-column:9/span 4">Année 3</div></div></div>
+          <div class="ph"><div></div><div class="quarters">{q_fr}</div></div>
+          <div class="lane"><div class="lab">Études</div><div class="track"><div class="evt soft" style="grid-column:1/span 3;grid-row:1">TWIXAV<br>passations</div><div class="evt soft" style="grid-column:4;grid-row:1">TWIXAV<br>analyses</div><div class="evt soft" style="grid-column:1/span 3;grid-row:2">VIBEX<br>passations</div><div class="evt soft" style="grid-column:4;grid-row:2">VIBEX<br>analyses</div><div class="evt" style="grid-column:5/span 2;grid-row:1">SOFT<br>passations</div><div class="evt" style="grid-column:7;grid-row:1">SOFT<br>analyses</div><div class="evt" style="grid-column:5/span 2;grid-row:2">VIBOLF<br>passations</div><div class="evt" style="grid-column:7;grid-row:2">VIBOLF<br>analyses</div><div class="evt" style="grid-column:8/span 3;grid-row:2">TWIXOLF</div><div class="evt muted" style="grid-column:9/span 2;grid-row:3">SOLAR<br>BRAUD - BRAUDOLF</div><div class="evt" style="grid-column:11/span 2;grid-row:1">Analyses<br>finales</div></div></div>
+          <div class="lane"><div class="lab">Publications</div><div class="track"><div class="evt soft" style="grid-column:1/span 4;grid-row:1">Revue - protocoles<br>pipelines</div><div class="evt" style="grid-column:5;grid-row:2">VIBEX<br>rédaction</div><div class="evt" style="grid-column:6/span 3;grid-row:2">VIBEX<br>soumission - révisions</div><div class="evt" style="grid-column:7/span 3;grid-row:3">SOFT<br>rédaction</div><div class="evt" style="grid-column:9/span 4;grid-row:2">VIBOLF - TWIXOLF<br>rédaction</div><div class="evt" style="grid-column:10/span 3;grid-row:1">Soumissions<br>révisions</div></div></div>
+          <div class="lane"><div class="lab">Thèse</div><div class="track"><div class="evt dark" style="grid-column:1/span 4;grid-row:1">État de l’art</div><div class="evt dark" style="grid-column:2/span 3;grid-row:2">CER - DPD</div><div class="evt dark" style="grid-column:5/span 5;grid-row:1">Collectes - analyses<br>intégration</div><div class="evt dark" style="grid-column:9/span 4;grid-row:2">Rédaction<br>de thèse</div><div class="evt dark" style="grid-column:11;grid-row:1">Soumission<br>thèse</div><div class="evt dark" style="grid-column:12;grid-row:3">Soutenance</div></div></div>
+          <div class="lane"><div class="lab">Communications</div><div class="track"><div class="evt soft" style="grid-column:3;grid-row:1">JDD</div><div class="evt soft" style="grid-column:4;grid-row:2">Nuit des chercheurs</div><div class="evt" style="grid-column:6;grid-row:1">Expérimentarium</div><div class="evt" style="grid-column:7;grid-row:1">FJC</div><div class="evt" style="grid-column:7;grid-row:2">JDD</div><div class="evt" style="grid-column:8;grid-row:1">ECRO</div><div class="evt" style="grid-column:9;grid-row:1">GDR03</div><div class="evt" style="grid-column:11;grid-row:1">FJC</div><div class="evt" style="grid-column:11;grid-row:2">JDD</div><div class="evt muted" style="grid-column:12;grid-row:1">ISOT</div></div></div>
+          <div class="legend">Cycle trimestriel : T1 = oct.-déc., T2 = janv.-mars, T3 = avr.-juin, T4 = juil.-sept., puis répétition sur les années suivantes.</div>
+          </div>'''
+
+          en_content = style + f'''<div class="csi-plan12">
+          <div class="ph"><div></div><div class="years"><div class="year" style="grid-column:1/span 4">Year 1</div><div class="year" style="grid-column:5/span 4">Year 2</div><div class="year" style="grid-column:9/span 4">Year 3</div></div></div>
+          <div class="ph"><div></div><div class="quarters">{q_en}</div></div>
+          <div class="lane"><div class="lab">Studies</div><div class="track"><div class="evt soft" style="grid-column:1/span 3;grid-row:1">TWIXAV<br>data collection</div><div class="evt soft" style="grid-column:4;grid-row:1">TWIXAV<br>analyses</div><div class="evt soft" style="grid-column:1/span 3;grid-row:2">VIBEX<br>data collection</div><div class="evt soft" style="grid-column:4;grid-row:2">VIBEX<br>analyses</div><div class="evt" style="grid-column:5/span 2;grid-row:1">SOFT<br>data collection</div><div class="evt" style="grid-column:7;grid-row:1">SOFT<br>analyses</div><div class="evt" style="grid-column:5/span 2;grid-row:2">VIBOLF<br>data collection</div><div class="evt" style="grid-column:7;grid-row:2">VIBOLF<br>analyses</div><div class="evt" style="grid-column:8/span 3;grid-row:2">TWIXOLF</div><div class="evt muted" style="grid-column:9/span 2;grid-row:3">SOLAR<br>BRAUD - BRAUDOLF</div><div class="evt" style="grid-column:11/span 2;grid-row:1">Final<br>analyses</div></div></div>
+          <div class="lane"><div class="lab">Publications</div><div class="track"><div class="evt soft" style="grid-column:1/span 4;grid-row:1">Review - protocols<br>pipelines</div><div class="evt" style="grid-column:5;grid-row:2">VIBEX<br>writing</div><div class="evt" style="grid-column:6/span 3;grid-row:2">VIBEX<br>submission - revisions</div><div class="evt" style="grid-column:7/span 3;grid-row:3">SOFT<br>writing</div><div class="evt" style="grid-column:9/span 4;grid-row:2">VIBOLF - TWIXOLF<br>writing</div><div class="evt" style="grid-column:10/span 3;grid-row:1">Submissions<br>revisions</div></div></div>
+          <div class="lane"><div class="lab">Thesis</div><div class="track"><div class="evt dark" style="grid-column:1/span 4;grid-row:1">Literature review</div><div class="evt dark" style="grid-column:2/span 3;grid-row:2">Ethics - data protection</div><div class="evt dark" style="grid-column:5/span 5;grid-row:1">Collections - analyses<br>integration</div><div class="evt dark" style="grid-column:9/span 4;grid-row:2">Thesis<br>writing</div><div class="evt dark" style="grid-column:11;grid-row:1">Thesis<br>submission</div><div class="evt dark" style="grid-column:12;grid-row:3">Defense</div></div></div>
+          <div class="lane"><div class="lab">Communications</div><div class="track"><div class="evt soft" style="grid-column:3;grid-row:1">JDD</div><div class="evt soft" style="grid-column:4;grid-row:2">Researchers' Night</div><div class="evt" style="grid-column:6;grid-row:1">Experimentarium</div><div class="evt" style="grid-column:7;grid-row:1">FJC</div><div class="evt" style="grid-column:7;grid-row:2">JDD</div><div class="evt" style="grid-column:8;grid-row:1">ECRO</div><div class="evt" style="grid-column:9;grid-row:1">GDR03</div><div class="evt" style="grid-column:11;grid-row:1">FJC</div><div class="evt" style="grid-column:11;grid-row:2">JDD</div><div class="evt muted" style="grid-column:12;grid-row:1">ISOT</div></div></div>
+          <div class="legend">Quarter cycle: Q1 = Oct.-Dec., Q2 = Jan.-Mar., Q3 = Apr.-Jun., Q4 = Jul.-Sep., then repeated across subsequent years.</div>
+          </div>'''
+
+          target['_fr']['content'] = fr_content
+          target['_en']['content'] = en_content
+          target['content'] = fr_content
+          target['_fr']['notes'] = 'Repérage continu T1 à T12. VIBEX : passations T1-T3, analyses T4, rédaction T5, soumission puis révisions T6-T8. TWIXAV : passations T1-T3, analyses T4. SOFT et VIBOLF : passations T5-T6, analyses T7. Communications positionnées d’après leur mois récurrent dans un cycle octobre-septembre.'
+          target['_en']['notes'] = 'Continuous Q1-Q12 numbering. VIBEX: data collection Q1-Q3, analyses Q4, writing Q5, submission and revisions Q6-Q8. TWIXAV: data collection Q1-Q3, analyses Q4. SOFT and VIBOLF: data collection Q5-Q6, analyses Q7. Communications positioned from their recurring month in an October-September cycle.'
+          target['notes'] = target['_fr']['notes']
+
+          new_array = json.dumps(slides, ensure_ascii=False, indent=2)
+          out = text[:pos] + new_array + text[pos+consumed:]
+          p.write_text(out, encoding='utf-8')
+          PY
+      - name: Validate JavaScript and requested slide content
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script[^>]*>(.*?)</script>',s,flags=re.S|re.I)
+          target=[x for x in scripts if 'const slides = [' in x]
+          if len(target)!=1: raise RuntimeError('slides script not found')
+          Path('/tmp/slides.js').write_text(target[0],encoding='utf-8')
+          for needle in ['>T12<','TWIXAV<br>passations','VIBEX<br>soumission - révisions','SOFT<br>passations','VIBOLF<br>passations','>GDR03<','Soumission<br>thèse','>Soutenance<']:
+              if needle not in s: raise RuntimeError(f'Missing {needle}')
+          for forbidden in ['GDRO3','trimestre à préciser','État de l’art</div><div class=\\"evt dark\\" style=\\"grid-column:2/span 3;grid-row:2\\">CER - DPD<br>protocoles']:
+              if forbidden in s: raise RuntimeError(f'Forbidden content remains: {forbidden}')
+          PY
+          node --check /tmp/slides.js
+      - name: Verify protected save untouched
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+      - name: Commit update and remove helper
+        run: |
+          git rm .github/workflows/csi-update-slide40-t1-t12.yml
+          git add index.html
+          git commit -m "Refine slide 40 quarter timing and events"
+          git push
