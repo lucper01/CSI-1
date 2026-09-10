@@ -1,0 +1,58 @@
+name: CSI timeline keywords v2
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-timeline-keywords-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Save current CSI state first
+        run: |
+          cp index.html index_save.html
+          SAVED_SHA=$(git hash-object index_save.html)
+          echo "SAVED_SHA=$SAVED_SHA" >> "$GITHUB_ENV"
+          git add index_save.html
+          git commit -m "Save current CSI state before timeline keyword refinement"
+          git push
+      - name: Refine local timeline labels
+        run: python tools/tmp_timeline_keywords_v2.py
+      - name: Validate JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          target=next((s for s in scripts if 'const slides = [' in s), None)
+          if target is None:
+              raise SystemExit('Slides script not found')
+          Path('/tmp/csi-slides-script.js').write_text(target, encoding='utf-8')
+          PY
+          node --check /tmp/csi-slides-script.js
+      - name: Verify save untouched after patch
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVED_SHA"
+          grep -q "CSI_TIMELINE_KEYWORDS_V2" index.html
+      - name: Commit working presentation
+        run: |
+          git add index.html
+          git commit -m "Use slide keywords in local section timelines"
+          git push
+      - name: Remove temporary helpers
+        run: |
+          git rm tools/tmp_timeline_keywords_v2.py .github/workflows/tmp-timeline-keywords-v2.yml
+          git commit -m "Remove temporary timeline keyword helpers"
+          git push
