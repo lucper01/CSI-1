@@ -1,0 +1,38 @@
+name: CSI save then figure n labels
+
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_save_then_figure_n_labels.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Save current CSI working version
+        run: |
+          cp index.html index_save.html
+          cmp -s index.html index_save.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_save.html
+          git commit -m "Save CSI before figure sample-size labels"
+
+      - name: Update result figures
+        run: python .github/scripts/csi_save_then_figure_n_labels.py
+
+      - name: Verify save stayed frozen after update
+        run: git diff --exit-code -- index_save.html
+
+      - name: Commit working figure updates
+        run: |
+          git add index.html assets/results/twixav_empirical_curves.svg assets/results/twixav_tbw_width.svg assets/results/vibex_m1_olivia.svg assets/results/vibex_size_interaction.svg
+          git commit -m "Refine TWIXAV and VIBEX result figure labels"
+          git push
