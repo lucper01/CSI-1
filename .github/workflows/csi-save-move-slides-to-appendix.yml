@@ -23,12 +23,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index_save.html
           if ! git diff --cached --quiet; then
-            git commit -m "Save CSI before moving slides to appendix"
+            git commit -m "Save CSI before moving slide 38 to appendix"
             git push
           fi
           echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
 
-      - name: Move selected slides to appendix
+      - name: Move selected slide to appendix
         run: python .github/scripts/csi_save_move_slides_to_appendix.py
 
       - name: Verify save remains frozen
@@ -39,5 +39,5 @@ jobs:
       - name: Commit working deck update
         run: |
           git add index.html
-          git commit -m "Move slides 26 36 40 41 to appendix"
+          git commit -m "Move slide 38 to appendix"
           git push
