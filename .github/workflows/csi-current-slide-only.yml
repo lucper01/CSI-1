@@ -1,0 +1,24 @@
+name: CSI current slide number only
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_current_slide_only.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch slide counter
+        run: python .github/scripts/csi_current_slide_only.py
+      - name: Verify save unchanged
+        run: git diff --exit-code -- index_save.html
+      - name: Commit deck update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Show current slide number only"
+          git push
