@@ -2,7 +2,7 @@ name: CSI restyle STOLF axis tree
 on:
   push:
     paths:
-      - '.github/workflows/csi-restyle-axis-tree-slide35.yml'
+      - .github/workflows/csi-restyle-axis-tree-slide35.yml
 permissions:
   contents: write
 jobs:
@@ -16,45 +16,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Record protected save
-        run: echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
-      - name: Restyle STOLF axis tree slide
-        shell: bash
+      - name: Record save hash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import json
-
-          p = Path('index.html')
-          text = p.read_text(encoding='utf-8')
-          marker = 'const slides = '
-          pos = text.index(marker) + len(marker)
-          slides, consumed = json.JSONDecoder().raw_decode(text[pos:])
-          main = [s for s in slides if not s.get('appendix', False)]
-          targets = [s for s in main if s.get('_fr', {}).get('title') == 'STOLF - des axes aux études']
-          assert len(targets) == 1
-          target = targets[0]
-
-          fr = r'''<style>
-.stolf-flow{width:min(1040px,94%);margin:2px auto 0;position:relative}
-.stolf-flow *{box-sizing:border-box}
-.stolf-flow .root-wrap{position:relative;display:flex;justify-content:center;margin-bottom:26px}
-.stolf-flow .root-wrap:after{content:"";position:absolute;left:50%;top:68px;width:2px;height:30px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
-.stolf-flow .root{position:relative;z-index:2;min-width:280px;padding:13px 28px;border-radius:999px;text-align:center;background:linear-gradient(135deg,var(--accent-strong),var(--accent));color:#fff;font-weight:950;font-size:1.7rem;letter-spacing:.055em;box-shadow:var(--shadow-soft)}
-.stolf-flow .axes{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:46px}
-.stolf-flow .axes:before{content:"";position:absolute;left:25%;right:25%;top:-14px;height:2px;background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
-.stolf-flow .axis{position:relative;display:flex;flex-direction:column;align-items:center}
-.stolf-flow .axis:before{content:"";position:absolute;top:-14px;left:50%;width:2px;height:24px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
-.stolf-flow .axis-head{position:relative;z-index:2;width:min(390px,100%);padding:14px 18px;border-radius:22px;background:var(--white);border:1px solid var(--line);box-shadow:var(--shadow-soft);text-align:center}
-.stolf-flow .axis-tag{display:inline-flex;padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong);font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
-.stolf-flow .axis-head h3{margin:8px 0 0;color:var(--accent-strong);font:800 1.08rem Georgia,"Times New Roman",serif;line-height:1.2}
-.stolf-flow .chain{width:min(300px,86%);margin-top:13px;display:grid;gap:13px}
-.stolf-flow .study-node{--study:var(--accent);position:relative;display:grid;place-items:center;min-height:48px;padding:10px 16px;border-radius:18px;background:var(--study);border:1px solid var(--study);color:#fff;font-weight:950;font-size:1rem;letter-spacing:.025em;text-align:center;box-shadow:0 8px 22px color-mix(in srgb,var(--study) 20%,transparent)}
-.stolf-flow .study-node:not(:last-child):after{content:"";position:absolute;left:50%;top:100%;width:2px;height:13px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 28%,transparent)}
-.stolf-flow .study-node:not(:last-child):before{content:"";position:absolute;z-index:3;left:50%;top:calc(100% + 8px);width:7px;height:7px;border-right:2px solid color-mix(in srgb,var(--accent-strong) 45%,transparent);border-bottom:2px solid color-mix(in srgb,var(--accent-strong) 45%,transparent);transform:translateX(-50%) rotate(45deg)}
-.stolf-flow .study-node.faded{opacity:.36}
-.stolf-flow .study-node.focus{opacity:1}
-.stolf-flow .twixav{--study:#2f6f9f}.stolf-flow .soft{--study:#7652a8}.stolf-flow .twixolf{--study:#c36c32}.stolf-flow .solar{--study:#d09422}.stolf-flow .vibex{--study:#2f7d5a}.stolf-flow .vibolf{--study:#b44e6c}.stolf-flow .braud{--study:#4f7187}.stolf-flow .braudolf{--study:#875a7c}
+          echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Restyle axis tree
+        run: |
+          echo 'CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQganNvbiwgcmUsIHN1YnByb2Nlc3MKCnAgPSBQYXRoKCJpbmRleC5odG1sIikKdGV4dCA9IHAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCm1hcmtlciA9ICJjb25zdCBzbGlkZXMgPSAiCnBvcyA9IHRleHQuaW5kZXgobWFya2VyKSArIGxlbihtYXJrZXIpCnNsaWRlcywgY29uc3VtZWQgPSBqc29uLkpTT05EZWNvZGVyKCkucmF3X2RlY29kZSh0ZXh0W3BvczpdKQptYWluID0gW3MgZm9yIHMgaW4gc2xpZGVzIGlmIG5vdCBzLmdldCgiYXBwZW5kaXgiLCBGYWxzZSldCnRhcmdldHMgPSBbcyBmb3IgcyBpbiBtYWluIGlmIHMuZ2V0KCJfZnIiLCB7fSkuZ2V0KCJ0aXRsZSIpID09ICJTVE9MRiAtIGRlcyBheGVzIGF1eCDDqXR1ZGVzIl0KYXNzZXJ0IGxlbih0YXJnZXRzKSA9PSAxCnRhcmdldCA9IHRhcmdldHNbMF0KCmZyID0gcicoJyc8c3R5bGU+Ci5zdG9sZi1mbG93e3dpZHRoOm1pbigxMDQwcHgsOTQlKTttYXJnaW46MnB4IGF1dG8gMDtwb3NpdGlvbjpyZWxhdGl2ZX0KLnN0b2xmLWZsb3cgKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Ci5zdG9sZi1mbG93IC5yb290LXdyYXB7cG9zaXRpb246cmVsYXRpdmU7ZGlzcGxheTpmbGV4O2p1c3RpZnktY29udGVudDpjZW50ZXI7bWFyZ2luLWJvdHRvbToyNnB4fQouc3RvbGYtZmxvdyAucm9vdC13cmFwOmFmdGVye2NvbnRlbnQ6IiI7cG9zaXRpb246YWJzb2x1dGU7bGVmdDo1MCU7dG9wOjY4cHg7d2lkdGg6MnB4O2hlaWdodDozMHB4O3RyYW5zZm9ybTp0cmFuc2xhdGVYKC01MCUpO2JhY2tncm91bmQ6Y29sb3ItbWl4KGluIHNyZ2IsdmFyKC0tYWNjZW50LXN0cm9uZykgMzIlLHRyYW5zcGFyZW50KX0KLnN0b2xmLWZsb3cgLnJvb3R7cG9zaXRpb246cmVsYXRpdmU7ei1pbmRleDoyO21pbi13aWR0aDoyODBweDtwYWRkaW5nOjEzcHggMjhweDtib3JkZXItcmFkaXVzOjk5OXB4O3RleHQtYWxpZ246Y2VudGVyO2JhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDEzNWRlZyx2YXIoLS1hY2NlbnQtc3Ryb25nKSx2YXIoLS1hY2NlbnQpKTtjb2xvcjojZmZmO2ZvbnQtd2VpZ2h0Ojk1MDtmb250LXNpemU6MS43cmVtO2xldHRlci1zcGFjaW5nOi4wNTVlbTtib3gtc2hhZG93OnZhcigtLXNoYWRvdy1zb2Z0KX0KLnN0b2xmLWZsb3cgLmF4ZXN7cG9zaXRpb246cmVsYXRpdmU7ZGlzcGxheTpncmlkO2dyaWQtdGVtcGxhdGUtY29sdW1uczoxZnIgMWZyO2dhcDo0NnB4fQouc3RvbGYtZmxvdyAuYXhlczpiZWZvcmV7Y29udGVudDoiIjtwb3NpdGlvbjphYnNvbHV0ZTtsZWZ0OjI1JTtyaWdodDoyNSU7dG9wOi0xNHB4O2hlaWdodDoycHg7YmFja2dyb3VuZDpjb2xvci1taXgoaW4gc3JnYix2YXIoLS1hY2NlbnQtc3Ryb25nKSAzMiUsdHJhbnNwYXJlbnQpfQouc3RvbGYtZmxvdyAuYXhpc3twb3NpdGlvbjpyZWxhdGl2ZTtkaXNwbGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1uO2FsaWduLWl0ZW1zOmNlbnRlcn0KLnN0b2xmLWZsb3cgLmF4aXM6YmVmb3Jle2NvbnRlbnQ6IiI7cG9zaXRpb246YWJzb2x1dGU7dG9wOi0xNHB4O2xlZnQ6NTAlO3dpZHRoOjJweDtoZWlnaHQ6MjRweDt0cmFuc2Zvcm06dHJhbnNsYXRlWCgtNTAlKTtiYWNrZ3JvdW5kOmNvbG9yLW1peChpbiBzcmdiLHZhcigtLWFjY2VudC1zdHJvbmcpIDMyJSx0cmFuc3BhcmVudCl9Ci5zdG9sZi1mbG93IC5heGlzLWhlYWR7cG9zaXRpb246cmVsYXRpdmU7ei1pbmRleDoyO3dpZHRoOm1pbigzOTBweCwxMDAlKTtwYWRkaW5nOjE0cHggMThweDtib3JkZXItcmFkaXVzOjIycHg7YmFja2dyb3VuZDp2YXIoLS13aGl0ZSk7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtib3gtc2hhZG93OnZhcigtLXNoYWRvdy1zb2Z0KTt0ZXh0LWFsaWduOmNlbnRlcn0KLnN0b2xmLWZsb3cgLmF4aXMtdGFne2Rpc3BsYXk6aW5saW5lLWZsZXg7cGFkZGluZzo1cHggMTBweDtib3JkZXItcmFkaXVzOjk5OXB4O2JhY2tncm91bmQ6dmFyKC0tYWNjZW50LXNvZnQpO2NvbG9yOnZhcigtLWFjY2VudC1zdHJvbmcpO2ZvbnQtc2l6ZTouNzJyZW07Zm9udC13ZWlnaHQ6OTUwO2xldHRlci1zcGFjaW5nOi4wOGVtO3RleHQtdHJhbnNmb3JtOnVwcGVyY2FzZX0KLnN0b2xmLWZsb3cgLmF4aXMtaGVhZCBoM3ttYXJnaW46OHB4IDAgMDtjb2xvcjp2YXIoLS1hY2NlbnQtc3Ryb25nKTtmb250OjgwMCAxLjA4cmVtIEdlb3JnaWEsIlRpbWVzIE5ldyBSb21hbiIsc2VyaWY7bGluZS1oZWlnaHQ6MS4yfQouc3RvbGYtZmxvdyAuY2hhaW57d2lkdGg6bWluKDMwMHB4LDg2JSk7bWFyZ2luLXRvcDoxM3B4O2Rpc3BsYXk6Z3JpZDtnYXA6MTNweH0KLnN0b2xmLWZsb3cgLnN0dWR5LW5vZGV7LS1zdHVkeTp2YXIoLS1hY2NlbnQpO3Bvc2l0aW9uOnJlbGF0aXZlO2Rpc3BsYXk6Z3JpZDtwbGFjZS1pdGVtczpjZW50ZXI7bWluLWhlaWdodDo0OHB4O3BhZGRpbmc6MTBweCAxNnB4O2JvcmRlci1yYWRpdXM6MThweDtiYWNrZ3JvdW5kOnZhcigtLXN0dWR5KTtib3JkZXI6MXB4IHNvbGlkIHZhcigtLXN0dWR5KTtjb2xvcjojZmZmO2ZvbnQtd2VpZ2h0Ojk1MDtmb250LXNpemU6MXJlbTtsZXR0ZXItc3BhY2luZzouMDI1ZW07dGV4dC1hbGlnbjpjZW50ZXI7Ym94LXNoYWRvdzowIDhweCAyMnB4IGNvbG9yLW1peChpbiBzcmdiLHZhcigtLXN0dWR5KSAyMCUsdHJhbnNwYXJlbnQpfQouc3RvbGYtZmxvdyAuc3R1ZHktbm9kZTpub3QoOmxhc3QtY2hpbGQpOmFmdGVye2NvbnRlbnQ6IiI7cG9zaXRpb246YWJzb2x1dGU7bGVmdDo1MCU7dG9wOjEwMCU7d2lkdGg6MnB4O2hlaWdodDoxM3B4O3RyYW5zZm9ybTp0cmFuc2xhdGVYKC01MCUpO2JhY2tncm91bmQ6Y29sb3ItbWl4KGluIHNyZ2IsdmFyKC0tYWNjZW50LXN0cm9uZykgMjglLHRyYW5zcGFyZW50KX0KLnN0b2xmLWZsb3cgLnN0dWR5LW5vZGU6bm90KDpsYXN0LWNoaWxkKTpiZWZvcmV7Y29udGVudDoiIjtwb3NpdGlvbjphYnNvbHV0ZTt6LWluZGV4OjM7bGVmdDo1MCU7dG9wOmNhbGMoMTAwJSArIDhweCk7d2lkdGg6N3B4O2hlaWdodDo3cHg7Ym9yZGVyLXJpZ2h0OjJweCBzb2xpZCBjb2xvci1taXgoaW4gc3JnYix2YXIoLS1hY2NlbnQtc3Ryb25nKSA0NSUsdHJhbnNwYXJlbnQpO2JvcmRlci1ib3R0b206MnB4IHNvbGlkIGNvbG9yLW1peChpbiBzcmdiLHZhcigtLWFjY2VudC1zdHJvbmcpIDQ1JSx0cmFuc3BhcmVudCk7dHJhbnNmb3JtOnRyYW5zbGF0ZVgoLTUwJSkgcm90YXRlKDQ1ZGVnKX0KLnN0b2xmLWZsb3cgLnN0dWR5LW5vZGUuZmFkZWR7b3BhY2l0eTouMzZ9Ci5zdG9sZi1mbG93IC5zdHVkeS1ub2RlLmZvY3Vze29wYWNpdHk6MX0KLnN0b2xmLWZsb3cgLnR3aXhhdnt--study:#2f6f9f}.stolf-flow .soft{--study:#7652a8}.stolf-flow .twixolf{--study:#c36c32}.stolf-flow .solar{--study:#d09422}.stolf-flow .vibex{--study:#2f7d5a}.stolf-flow .vibolf{--study:#b44e6c}.stolf-flow .braud{--study:#4f7187}.stolf-flow .braudolf{--study:#875a7c}
 @media(max-width:900px){.stolf-flow{width:100%}.stolf-flow .axes{gap:24px}.stolf-flow .axis-head h3{font-size:.92rem}.stolf-flow .chain{width:90%}.stolf-flow .study-node{font-size:.88rem;min-height:44px}}
 </style>
 <div class="stolf-flow">
@@ -79,92 +46,12 @@ jobs:
       </div>
     </section>
   </div>
-</div>'''
-
-          en = r'''<style>
-.stolf-flow{width:min(1040px,94%);margin:2px auto 0;position:relative}
-.stolf-flow *{box-sizing:border-box}
-.stolf-flow .root-wrap{position:relative;display:flex;justify-content:center;margin-bottom:26px}
-.stolf-flow .root-wrap:after{content:"";position:absolute;left:50%;top:68px;width:2px;height:30px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
-.stolf-flow .root{position:relative;z-index:2;min-width:280px;padding:13px 28px;border-radius:999px;text-align:center;background:linear-gradient(135deg,var(--accent-strong),var(--accent));color:#fff;font-weight:950;font-size:1.7rem;letter-spacing:.055em;box-shadow:var(--shadow-soft)}
-.stolf-flow .axes{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:46px}
-.stolf-flow .axes:before{content:"";position:absolute;left:25%;right:25%;top:-14px;height:2px;background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
-.stolf-flow .axis{position:relative;display:flex;flex-direction:column;align-items:center}
-.stolf-flow .axis:before{content:"";position:absolute;top:-14px;left:50%;width:2px;height:24px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 32%,transparent)}
-.stolf-flow .axis-head{position:relative;z-index:2;width:min(390px,100%);padding:14px 18px;border-radius:22px;background:var(--white);border:1px solid var(--line);box-shadow:var(--shadow-soft);text-align:center}
-.stolf-flow .axis-tag{display:inline-flex;padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong);font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
-.stolf-flow .axis-head h3{margin:8px 0 0;color:var(--accent-strong);font:800 1.08rem Georgia,"Times New Roman",serif;line-height:1.2}
-.stolf-flow .chain{width:min(300px,86%);margin-top:13px;display:grid;gap:13px}
-.stolf-flow .study-node{--study:var(--accent);position:relative;display:grid;place-items:center;min-height:48px;padding:10px 16px;border-radius:18px;background:var(--study);border:1px solid var(--study);color:#fff;font-weight:950;font-size:1rem;letter-spacing:.025em;text-align:center;box-shadow:0 8px 22px color-mix(in srgb,var(--study) 20%,transparent)}
-.stolf-flow .study-node:not(:last-child):after{content:"";position:absolute;left:50%;top:100%;width:2px;height:13px;transform:translateX(-50%);background:color-mix(in srgb,var(--accent-strong) 28%,transparent)}
-.stolf-flow .study-node:not(:last-child):before{content:"";position:absolute;z-index:3;left:50%;top:calc(100% + 8px);width:7px;height:7px;border-right:2px solid color-mix(in srgb,var(--accent-strong) 45%,transparent);border-bottom:2px solid color-mix(in srgb,var(--accent-strong) 45%,transparent);transform:translateX(-50%) rotate(45deg)}
-.stolf-flow .study-node.faded{opacity:.36}
-.stolf-flow .study-node.focus{opacity:1}
-.stolf-flow .twixav{--study:#2f6f9f}.stolf-flow .soft{--study:#7652a8}.stolf-flow .twixolf{--study:#c36c32}.stolf-flow .solar{--study:#d09422}.stolf-flow .vibex{--study:#2f7d5a}.stolf-flow .vibolf{--study:#b44e6c}.stolf-flow .braud{--study:#4f7187}.stolf-flow .braudolf{--study:#875a7c}
-@media(max-width:900px){.stolf-flow{width:100%}.stolf-flow .axes{gap:24px}.stolf-flow .axis-head h3{font-size:.92rem}.stolf-flow .chain{width:90%}.stolf-flow .study-node{font-size:.88rem;min-height:44px}}
-</style>
-<div class="stolf-flow">
-  <div class="root-wrap"><div class="root">STOLF</div></div>
-  <div class="axes">
-    <section class="axis">
-      <div class="axis-head"><span class="axis-tag">Axis 1</span><h3>Spatio-temporal relations between olfaction, vision and audition</h3></div>
-      <div class="chain">
-        <div class="study-node twixav faded">TWIXAV</div>
-        <div class="study-node soft faded">SOFT</div>
-        <div class="study-node twixolf faded">TWIXOLF</div>
-        <div class="study-node solar focus">SOLAR</div>
-      </div>
-    </section>
-    <section class="axis">
-      <div class="axis-head"><span class="axis-tag">Axis 2</span><h3>Influence of odors on spatio-temporal perception</h3></div>
-      <div class="chain">
-        <div class="study-node vibex faded">VIBEX</div>
-        <div class="study-node vibolf faded">VIBOLF</div>
-        <div class="study-node braud focus">BRAUD</div>
-        <div class="study-node braudolf focus">BRAUDOLF</div>
-      </div>
-    </section>
-  </div>
-</div>'''
-
-          target['_fr']['content'] = fr
-          target['_en']['content'] = en
-          target['content'] = fr
-          target['_fr']['notes'] = 'Schéma des deux axes. Les couleurs d’étude sont celles du CSI. TWIXAV, SOFT, TWIXOLF, VIBEX et VIBOLF sont atténués uniquement par transparence ; SOLAR, BRAUD et BRAUDOLF restent en pleine opacité.'
-          target['_en']['notes'] = 'Two-axis diagram. Study colors match the CSI palette. TWIXAV, SOFT, TWIXOLF, VIBEX and VIBOLF are faded only through opacity; SOLAR, BRAUD and BRAUDOLF remain fully opaque.'
-          target['notes'] = target['_fr']['notes']
-
-          new_array = json.dumps(slides, ensure_ascii=False, indent=2)
-          p.write_text(text[:pos] + new_array + text[pos+consumed:], encoding='utf-8')
-          PY
-      - name: Validate updated slide and JavaScript
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import json, re
-          text = Path('index.html').read_text(encoding='utf-8')
-          marker='const slides = '
-          pos=text.index(marker)+len(marker)
-          slides,_=json.JSONDecoder().raw_decode(text[pos:])
-          main=[s for s in slides if not s.get('appendix',False)]
-          targets=[s for s in main if s.get('_fr',{}).get('title')=='STOLF - des axes aux études']
-          assert len(targets)==1
-          s=targets[0]
-          assert '#2f6f9f' in s['_fr']['content'] and '#d09422' in s['_fr']['content']
-          assert '#4f7187' in s['_fr']['content'] and '#875a7c' in s['_fr']['content']
-          assert '.study-node.faded{opacity:.36}' in s['_fr']['content']
-          assert 'class="study-node solar focus"' in s['_fr']['content']
-          assert 'class="study-node braud focus"' in s['_fr']['content']
-          assert 'class="study-node braudolf focus"' in s['_fr']['content']
-          scripts=re.findall(r'<script>(.*?)</script>',text,flags=re.S)
-          matches=[x for x in scripts if 'const slides = [' in x]
-          assert len(matches)==1
-          Path('/tmp/slides.js').write_text(matches[0],encoding='utf-8')
-          PY
-          node --check /tmp/slides.js
+</div>'''KQoZW4gPSBmci5yZXBsYWNlKCJBeGUgMSIsIkF4aXMgMSIpLnJlcGxhY2UoIkF4ZSAyIiwiQXhpcyAyIikucmVwbGFjZSgKICAgICJSZWxhdGlvbnMgc3BhdGlvLXRlbXBvcmVsbGVzIGVudHJlIG9sZmFjdGlvbiwgdmlzaW9uIGV0IGF1ZGl0aW9uIiwKICAgICJTcGF0aW8tdGVtcG9yYWwgcmVsYXRpb25zIGJldHdlZW4gb2xmYWN0aW9uLCB2aXNpb24gYW5kIGF1ZGl0aW9uIgopLnJlcGxhY2UoCiAgICAiSW5mbHVlbmNlIGRlcyBvZGV1cnMgc3VyIGxhIHBlcmNlcHRpb24gc3BhdGlvLXRlbXBvcmVsbGUiLAogICAgIkluZmx1ZW5jZSBvZiBvZG9ycyBvbiBzcGF0aW8tdGVtcG9yYWwgcGVyY2VwdGlvbiIKKQoKdGFyZ2V0WyJfZnIiXVsiY29udGVudCJdID0gZnIKdGFyZ2V0WyJfZW4iXVsiY29udGVudCJdID0gZW4KdGFyZ2V0WyJjb250ZW50Il0gPSBmcgp0YXJnZXRbIl9mciJdWyJub3RlcyJdID0gIlNjaMOobWEgZGVzIGRldXggYXhlcy4gTGVzIGNvdWxldXJzIGTigJlpdHVkZSBzb250IGNlbGxlcyBkdSBDU0kuIFRXSVhBViwgU09GVCwgVFdJWE9MRiwgVklCRVggZXQgVklCT0xGIHNvbnQgYXR0w6ludsOpcyB1bmlxdWVtZW50IHBhciB0cmFuc3BhcmVuY2UgOyBTT0xBUiwgQlJBVUQgZXQgQlJBVURPTEYgcmVzdGVudCBlbiBwbGVpbmUgb3BhY2l0w6kuIgp0YXJnZXRbIl9lbiJdWyJub3RlcyJdID0gIlR3by1heGlzIGRpYWdyYW0uIFN0dWR5IGNvbG9ycyBtYXRjaCB0aGUgQ1NJIHBhbGV0dGUuIFRXSVhBViwgU09GVCwgVFdJWE9MRiwgVklCRVggYW5kIFZJQk9MRiBhcmUgZmFkZWQgb25seSB0aHJvdWdoIG9wYWNpdHk7IFNPTEFSLCBCUkFVRCBhbmQgQlJBVURPTEYgcmVtYWluIGZ1bGx5IG9wYXF1ZS4iCnRhcmdldFsibm90ZXMiXSA9IHRhcmdldFsiX2ZyIl1bIm5vdGVzIl0KCm5ld19hcnJheSA9IGpzb24uZHVtcHMoc2xpZGVzLCBlbnN1cmVfYXNjaWk9RmFsc2UsIGluZGVudD0yKQpvdXQgPSB0ZXh0Wzpvc10gKyBuZXdfYXJyYXkgKyB0ZXh0W3Bvcitjb25zdW1lZDpdCnAud3JpdGVfdGV4dChvdXQsIGVuY29kaW5nPSJ1dGYtOCIpCgojIHZhbGlkYXRpb24KdGV4dDIgPSBwLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQpwb3MyID0gdGV4dDIuaW5kZXgobWFya2VyKSArIGxlbihtYXJrZXIpCnNsaWRlczIsIF8gPSBqc29uLkpTT05EZWNvZGVyKCkucmF3X2RlY29kZSh0ZXh0Mltwb3MyOl0pCm1haW4yID0gW3MgZm9yIHMgaW4gc2xpZGVzMiBpZiBub3Qgcy5nZXQoImFwcGVuZGl4IiwgRmFsc2UpXQp0YXJnZXRzMiA9IFtzIGZvciBzIGluIG1haW4yIGlmIHMuZ2V0KCJfZnIiLCB7fSkuZ2V0KCJ0aXRsZSIpID09ICJTVE9MRiAtIGRlcyBheGVzIGF1eCDDqXR1ZGVzIl0KYXNzZXJ0IGxlbih0YXJnZXRzMikgPT0gMQpjID0gdGFyZ2V0czJbMF1bIl9mciJdWyJjb250ZW50Il0KZm9yIGh4IGluICgiIzJmNmY5ZiIsIiM3NjUyYTgiLCIjYzM2YzMyIiwiIzJmN2Q1YSIsIiNiNDRlNmMiLCIjZDA5NDIyIiwiIzRmNzE4NyIsIiM4NzVhN2MiKToKICAgIGFzc2VydCBoeCBpbiBjCmFzc2VydCAiLnN0dWR5LW5vZGUuZmFkZWR7b3BhY2l0eTouMzZ9IiBpbiBjCmFzc2VydCAnY2xhc3M9InN0dWR5LW5vZGUgc29sYXIgZm9jdXMiJyBpbiBjCmFzc2VydCAnY2xhc3M9InN0dWR5LW5vZGUgYnJhdWQgZm9jdXMiJyBpbiBjCmFzc2VydCAnY2xhc3M9InN0dWR5LW5vZGUgYnJhdWRvbGYgZm9jdXMiJyBpbiBjCnNjcmlwdHMgPSByZS5maW5kYWxsKHIiPHNjcmlwdD4oLio/KTwvc2NyaXB0PiIsIHRleHQyLCBmbGFncz1yZS5TKQptYXRjaGVzID0gW3ggZm9yIHggaW4gc2NyaXB0cyBpZiAiY29uc3Qgc2xpZGVzID0gWyIgaW4geF0KYXNzZXJ0IGxlbihtYXRjaGVzKSA9PSAxClBhdGgoIi90bXAvc2xpZGVzLmpzIikud3JpdGVfdGV4dChtYXRjaGVzWzBdLCBlbmNvZGluZz0idXRmLTgiKQpzdWJwcm9jZXNzLnJ1bihbIm5vZGUiLCItLWNoZWNrIiwiL3RtcC9zbGlkZXMuanMiXSwgY2hlY2s9VHJ1ZSkKcHJpbnQoIlJFU1RZTEVfT0siKQo=' | base64 -d > /tmp/restyle.py
+          python /tmp/restyle.py
       - name: Verify save untouched
-        run: test "$SAVE_SHA" = "$(git hash-object index_save.html)"
-      - name: Commit update and remove helper
+        run: |
+          test "$SAVE_SHA" = "$(git hash-object index_save.html)"
+      - name: Commit and remove helper
         run: |
           rm .github/workflows/csi-restyle-axis-tree-slide35.yml
           git add index.html .github/workflows/csi-restyle-axis-tree-slide35.yml
