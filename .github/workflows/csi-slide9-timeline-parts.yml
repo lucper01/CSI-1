@@ -1,5 +1,5 @@
 name: CSI slide 9 wording and part timeline
-# diagnostic retry
+# final retry with corrected script extraction
 on:
   push:
     paths:
@@ -29,14 +29,12 @@ jobs:
           text=Path('index.html').read_text(encoding='utf-8')
           m=re.search(r'<script>\s*const slides = \[', text)
           if not m: raise SystemExit('slides script not found')
-          start=text.rfind('<script>',0,m.start())+len('<script>')
-          end=text.find('</script>',m.start())
+          start=m.start()+len('<script>')
+          end=text.find('</script>',m.end())
+          if end < 0: raise SystemExit('slides script closing tag not found')
           js=text[start:end]
           p=Path('/tmp/csi_slides_script.js'); p.write_text(js,encoding='utf-8')
-          r=subprocess.run(['node','--check',str(p)],capture_output=True,text=True)
-          if r.returncode:
-              Path('.github/node_check_error.txt').write_text(r.stdout+'\n'+r.stderr,encoding='utf-8')
-              raise SystemExit('Node validation failed; diagnostic file created')
+          subprocess.run(['node','--check',str(p)],check=True)
           PY
       - name: Verify protected save untouched
         run: test "$(git hash-object index_save.html)" = "$SAVE_SHA"
@@ -45,17 +43,10 @@ jobs:
           git add index.html
           git commit -m "Update slide 9 wording and footer part timeline"
           git push
-      - name: Remove temporary helpers
+      - name: Remove temporary helpers and diagnostic
         run: |
           git pull --rebase
           git rm .github/scripts/csi_slide9_timeline_parts.py .github/workflows/csi-slide9-timeline-parts.yml
+          if [ -f .github/node_check_error.txt ]; then git rm .github/node_check_error.txt; fi
           git commit -m "Remove temporary slide 9 timeline helpers"
           git push
-      - name: Commit diagnostic on failure
-        if: failure()
-        run: |
-          if [ -f .github/node_check_error.txt ]; then
-            git add .github/node_check_error.txt
-            git commit -m "Record slide 9 timeline validation error" || true
-            git push || true
-          fi
