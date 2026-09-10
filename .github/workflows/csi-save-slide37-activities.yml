@@ -1,0 +1,160 @@
+name: CSI save and update slide 37 activities
+
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-slide37-activities.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Save current CSI working version
+        run: |
+          cp index.html index_save.html
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save CSI before slide 37 doctoral activities update"
+            git push
+          fi
+          echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+
+      - name: Update current main slide 37
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          marker = 'const slides = ['
+          start = text.index(marker) + len(marker)
+
+          # Find end of slides array.
+          i = start
+          depth_sq = 1
+          in_str = None
+          esc = False
+          end = None
+          while i < len(text):
+              ch = text[i]
+              if in_str:
+                  if esc:
+                      esc = False
+                  elif ch == '\\':
+                      esc = True
+                  elif ch == in_str:
+                      in_str = None
+              else:
+                  if ch in ('"', "'", '`'):
+                      in_str = ch
+                  elif ch == '[':
+                      depth_sq += 1
+                  elif ch == ']':
+                      depth_sq -= 1
+                      if depth_sq == 0:
+                          end = i
+                          break
+              i += 1
+          if end is None:
+              raise RuntimeError('Could not locate end of slides array')
+
+          body = text[start:end]
+
+          # Extract top-level slide objects with positions.
+          objs = []
+          i = 0
+          while i < len(body):
+              if body[i] != '{':
+                  i += 1
+                  continue
+              obj_start = i
+              depth = 0
+              in_str = None
+              esc = False
+              while i < len(body):
+                  ch = body[i]
+                  if in_str:
+                      if esc:
+                          esc = False
+                      elif ch == '\\':
+                          esc = True
+                      elif ch == in_str:
+                          in_str = None
+                  else:
+                      if ch in ('"', "'", '`'):
+                          in_str = ch
+                      elif ch == '{':
+                          depth += 1
+                      elif ch == '}':
+                          depth -= 1
+                          if depth == 0:
+                              objs.append((obj_start, i + 1, body[obj_start:i+1]))
+                              i += 1
+                              break
+                  i += 1
+
+          def is_appendix(obj):
+              return bool(re.search(r'"appendix"\s*:\s*true', obj))
+
+          main = [(a,b,o) for a,b,o in objs if not is_appendix(o)]
+          if len(main) < 37:
+              raise RuntimeError(f'Only {len(main)} main slides found')
+
+          a, b, obj = main[36]
+          if '"title": "Activités doctorales prévues - 2026-2027"' not in obj:
+              raise RuntimeError('Current main slide 37 is not the expected 2026-2027 doctoral activities slide')
+
+          replacements = [
+              ('<article><b>58 h eq. TD</b><h3>Enseignement</h3>',
+               '<article><b>58 h eq. TD - 29 h valorisées</b><h3>Enseignement</h3>', 2),
+              ('<article><b>60,5 h</b><h3>Formation doctorale</h3><p>29 h déjà prévues et 31,5 h planifiées pour 2026-2027, portant notamment sur l’éthique, la qualité en recherche, l’environnement académique, la publication et la gestion des données.</p><small>Projection cumulée : 120,5 h de formation doctorale.</small></article>',
+               '<article><b>31.5 h</b><h3>Formation doctorale</h3><p>Éthique - qualité en recherche - environnement académique - publication scientifique - gestion des données.</p></article>', 2),
+              ('<article><b>1 M1</b><h3>Encadrement</h3><p>Un seul encadrement de mémoire de Master 1 est prévu pendant l’année 2026-2027, en articulation avec les travaux de thèse.</p></article>',
+               '<article><b>1 M1</b><h3>Encadrement</h3><p>Encadrement d’un mémoire de Master 1 sur la manipulation VIBOLF.</p><div class="v16-tool-pills"><span>VIBOLF</span></div></article>', 2),
+              ('<article><b>58 tutorial-equivalent h</b><h3>Teaching</h3>',
+               '<article><b>58 tutorial-equivalent h - 29 h credited</b><h3>Teaching</h3>', 1),
+              ('<article><b>60.5 h</b><h3>Doctoral training</h3><p>29 h already planned plus 31.5 h scheduled for 2026-2027, including research ethics, quality in research, the academic environment, scientific publishing and research-data management.</p><small>Projected cumulative total: 120.5 h of doctoral training.</small></article>',
+               '<article><b>31.5 h</b><h3>Doctoral training</h3><p>Research ethics - quality in research - academic environment - scientific publishing - research-data management.</p></article>', 1),
+              ('<article><b>1 M1</b><h3>Supervision</h3><p>Only one Master 1 thesis supervision is planned during 2026-2027, linked to the PhD research programme.</p></article>',
+               '<article><b>1 M1</b><h3>Supervision</h3><p>Supervision of one Master 1 thesis on the VIBOLF experiment.</p><div class="v16-tool-pills"><span>VIBOLF</span></div></article>', 1),
+              ('"notes": "Présenter les volumes prévisionnels : 58 h eq. TD d’enseignement, 60,5 h de formation doctorale et un seul encadrement M1."',
+               '"notes": "Présenter les volumes prévisionnels : 58 h eq. TD - 29 h valorisées, 31.5 h de formation doctorale et un mémoire M1 sur VIBOLF."', 2),
+              ('"notes": "Present the planned volumes: 58 tutorial-equivalent teaching hours, 60.5 h of doctoral training and one Master 1 supervision."',
+               '"notes": "Present the planned volumes: 58 tutorial-equivalent teaching hours - 29 h credited, 31.5 h of doctoral training and one Master 1 thesis on VIBOLF."', 1),
+          ]
+
+          for old, new, expected in replacements:
+              count = obj.count(old)
+              if count != expected:
+                  raise RuntimeError(f'Expected {expected} occurrence(s), found {count}: {old[:90]}')
+              obj = obj.replace(old, new)
+
+          new_body = body[:a] + obj + body[b:]
+          path.write_text(text[:start] + new_body + text[end:], encoding='utf-8')
+          print('Updated current main slide 37: Activités doctorales prévues - 2026-2027')
+          PY
+
+      - name: Verify save stayed frozen
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+
+      - name: Commit working update and clean helper
+        run: |
+          git rm .github/workflows/csi-save-slide37-activities.yml
+          git add index.html
+          git commit -m "Update slide 37 doctoral activities"
+          git push
