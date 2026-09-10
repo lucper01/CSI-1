@@ -1,0 +1,23 @@
+name: Save and update slide 29 technical feedback
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-update-slide29-tech.yml'
+      - '.github/scripts/csi_save_update_slide29_tech.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Save current state and update slide 29
+        run: python .github/scripts/csi_save_update_slide29_tech.py
+      - name: Commit deck update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html index_save.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Save deck and update slide 29 technical feedback"
+          git push
