@@ -1,0 +1,31 @@
+name: CSI duplicate slide 14 vertical flow
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-duplicate-slide14-vertical.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record save hash
+        run: echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Duplicate slide 14 and restyle copy
+        run: python .github/tmp_csi_duplicate_slide14_vertical.py
+      - name: Verify save untouched
+        run: test "$SAVE_SHA" = "$(git hash-object index_save.html)"
+      - name: Commit and clean helpers
+        run: |
+          rm .github/tmp_csi_duplicate_slide14_vertical.py
+          rm .github/workflows/csi-duplicate-slide14-vertical.yml
+          git add index.html .github/tmp_csi_duplicate_slide14_vertical.py .github/workflows/csi-duplicate-slide14-vertical.yml
+          git commit -m "Duplicate slide 14 with vertical study flow"
+          git push origin main
