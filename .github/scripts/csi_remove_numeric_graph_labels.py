@@ -46,3 +46,5 @@ for path in FILES:
     if leftovers:
         raise SystemExit(f'{path}: numeric text labels remain: {leftovers}')
     print(f'{path}: verified - no numeric text labels remain')
+
+# trigger
