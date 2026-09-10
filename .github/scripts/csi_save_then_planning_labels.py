@@ -6,16 +6,11 @@ text = path.read_text(encoding='utf-8')
 replacements = [
     ('Compléments</h3>', 'Troisième année</h3>', 2),
     ('Extensions envisagées selon résultats et faisabilité.', 'Études complémentaires envisagées et activités doctorales prévisionnelles.', 2),
-    ('Extensions</h3>', 'Year 3</h3>', 1),
-    ('Additional studies depending on results and feasibility.', 'Complementary studies under consideration and planned doctoral activities.', 1),
     ('"chapter": "Rétroplanning global",\n    "study": "",\n    "appendix": false,\n    "hero": true,\n    "divider": true,', '"chapter": "Planification",\n    "study": "",\n    "appendix": false,\n    "hero": true,\n    "divider": true,', 1),
-    ('"section": "Rétroplanning global"', '"section": "Planification"', 3),
-    ('"title": "Rétroplanning"', '"title": "Planification"', 2),
+    ('"section": "Rétroplanning global",\n      "kicker": "",\n      "title": "Rétroplanning"', '"section": "Planification",\n      "kicker": "",\n      "title": "Planification"', 1),
+    ('"section": "Rétroplanning global",\n    "kicker": "",\n    "title": "Rétroplanning"', '"section": "Planification",\n    "kicker": "",\n    "title": "Planification"', 1),
     ('<h1>Rétroplanning</h1>', '<h1>Planification</h1>', 2),
-    ('"title": "Timeline"', '"title": "Planning"', 1),
-    ('<h1>Timeline</h1>', '<h1>Planning</h1>', 1),
     ('"title": "Rétroplanning - jusqu’à la soutenance"', '"title": "Planification - jusqu’à la soutenance"', 2),
-    ('"title": "Timeline - through the defense"', '"title": "Planning - through the defense"', 1),
 ]
 
 for old, new, expected in replacements:
