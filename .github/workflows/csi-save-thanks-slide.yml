@@ -1,0 +1,164 @@
+name: CSI save and redesign thank-you slide
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-thanks-slide.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Save current working version
+        run: |
+          cp index.html index_save.html
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save CSI before redesigning thank-you slide"
+            git push
+          fi
+          echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Redesign current main slide 41
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = ['
+          start = text.index(marker) + len(marker)
+
+          i = start
+          depth_sq = 1
+          in_str = None
+          esc = False
+          end = None
+          while i < len(text):
+              ch = text[i]
+              if in_str:
+                  if esc:
+                      esc = False
+                  elif ch == '\\':
+                      esc = True
+                  elif ch == in_str:
+                      in_str = None
+              else:
+                  if ch in ('"', "'", '`'):
+                      in_str = ch
+                  elif ch == '[':
+                      depth_sq += 1
+                  elif ch == ']':
+                      depth_sq -= 1
+                      if depth_sq == 0:
+                          end = i
+                          break
+              i += 1
+          if end is None:
+              raise RuntimeError('Could not locate slides array')
+
+          body = text[start:end]
+          objs = []
+          i = 0
+          while i < len(body):
+              if body[i] != '{':
+                  i += 1
+                  continue
+              a = i
+              depth = 0
+              in_str = None
+              esc = False
+              while i < len(body):
+                  ch = body[i]
+                  if in_str:
+                      if esc:
+                          esc = False
+                      elif ch == '\\':
+                          esc = True
+                      elif ch == in_str:
+                          in_str = None
+                  else:
+                      if ch in ('"', "'", '`'):
+                          in_str = ch
+                      elif ch == '{':
+                          depth += 1
+                      elif ch == '}':
+                          depth -= 1
+                          if depth == 0:
+                              objs.append((a, i + 1, body[a:i+1]))
+                              i += 1
+                              break
+                  i += 1
+
+          def is_appendix(obj):
+              return bool(re.search(r'"appendix"\s*:\s*true', obj))
+
+          main = [(a,b,o) for a,b,o in objs if not is_appendix(o)]
+          if len(main) != 41:
+              raise RuntimeError(f'Expected 41 main slides, found {len(main)}')
+          a,b,obj = main[40]
+          if '"title": "Merci pour votre attention"' not in obj:
+              raise RuntimeError('Current main slide 41 is not the thank-you slide')
+
+          old_fr_lead = 'Merci aux membres du Comité de Suivi Individuel pour leur attention et leurs échanges.'
+          new_fr_lead = 'Merci à toutes celles et ceux qui accompagnent ce travail et contribuent au projet STOLF.'
+          old_en_lead = 'Thank you to the members of the Individual PhD Monitoring Committee for their reading and discussion.'
+          new_en_lead = 'Thank you to everyone who supports this work and contributes to the STOLF project.'
+
+          old_fr_content = r'<div class=\"v16-thanks\"><article><b>FD</b><h3>Fabrice Damon</h3><p>Maître de conférences en psychologie - Université Bourgogne Europe, CSGA - DOCC.</p></article><article><b>CF</b><h3>Camille Ferdenzi-Lemaître</h3><p>Chargée de recherche CNRS - Centre de Recherche en Neurosciences de Lyon.</p></article><div><strong>Direction de thèse :</strong> Renaud Brochard - Arnaud Leleu</div></div>'
+          new_fr_content = r'<div class=\"v16-thanks\"><article><b>STOLF</b><h3>Équipe et encadrement</h3><p>Merci pour l’accompagnement scientifique, méthodologique et technique apporté tout au long de cette première année.</p></article><article><b>MERCI</b><h3>Collaborations et participants</h3><p>Merci aux collègues, étudiants, collaborateurs et participants qui rendent ces travaux possibles.</p></article><div><strong>Questions et échanges</strong> - Discussion autour des résultats, des études à venir et de la suite du projet.</div></div>'
+          old_en_content = r'<div class=\"v16-thanks\"><article><b>FD</b><h3>Fabrice Damon</h3><p>Associate Professor in psychology - Université Bourgogne Europe, CSGA - DOCC.</p></article><article><b>CF</b><h3>Camille Ferdenzi-Lemaître</h3><p>CNRS Research Scientist - Lyon Neuroscience Research Center.</p></article><div><strong>PhD supervision:</strong> Renaud Brochard - Arnaud Leleu</div></div>'
+          new_en_content = r'<div class=\"v16-thanks\"><article><b>STOLF</b><h3>Team and supervision</h3><p>Thank you for the scientific, methodological and technical support provided throughout this first year.</p></article><article><b>THANKS</b><h3>Collaborators and participants</h3><p>Thank you to colleagues, students, collaborators and participants who make this work possible.</p></article><div><strong>Questions and discussion</strong> - Discussion of the results, upcoming studies and the next steps of the project.</div></div>'
+
+          replacements = [
+              (old_fr_lead, new_fr_lead, 2),
+              (old_en_lead, new_en_lead, 1),
+              (old_fr_content, new_fr_content, 2),
+              (old_en_content, new_en_content, 1),
+              ('"notes": "Ouvrir la discussion."', '"notes": "Conclure par les remerciements puis ouvrir la discussion et les questions."', 2),
+              ('"notes": "Open the discussion."', '"notes": "Close with acknowledgements, then open the floor for questions and discussion."', 1),
+          ]
+          for old,new,expected in replacements:
+              count = obj.count(old)
+              if count != expected:
+                  raise RuntimeError(f'Expected {expected} occurrences, found {count}: {old[:100]}')
+              obj = obj.replace(old,new)
+
+          for forbidden in ('Fabrice Damon','Camille Ferdenzi-Lemaître'):
+              if forbidden in obj:
+                  raise RuntimeError(f'CSI member name still present: {forbidden}')
+
+          new_body = body[:a] + obj + body[b:]
+          p.write_text(text[:start] + new_body + text[end:], encoding='utf-8')
+          print('Redesigned main slide 41 as a generic thank-you slide')
+          PY
+      - name: Validate slides JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
+          target = [x for x in scripts if 'const slides = [' in x]
+          if len(target) != 1:
+              raise RuntimeError(f'Expected one main slides script, found {len(target)}')
+          Path('/tmp/slides.js').write_text(target[0], encoding='utf-8')
+          PY
+          node --check /tmp/slides.js
+      - name: Verify save stayed frozen
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+      - name: Commit working update and remove helper
+        run: |
+          git rm .github/workflows/csi-save-thanks-slide.yml
+          git add index.html
+          git commit -m "Redesign final thank-you slide"
+          git push
