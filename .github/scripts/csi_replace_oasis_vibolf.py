@@ -8,3 +8,4 @@ if count == 0:
 text = text.replace('OASIS', 'VIBOLF')
 path.write_text(text, encoding='utf-8')
 print(f'Replaced {count} occurrence(s) of OASIS with VIBOLF in index.html')
+# trigger
