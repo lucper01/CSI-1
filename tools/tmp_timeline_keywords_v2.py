@@ -70,9 +70,10 @@ new_func = r'''function timelineStepLabel(s,E){
 }'''
 
 pattern = r"function timelineStepLabel\(s,E\)\{.*?\n\}\n\nfunction partTimelineFor"
-text2, n = re.subn(pattern, new_func + "\n\nfunction partTimelineFor", text, count=1, flags=re.S)
-if n != 1:
-    raise SystemExit(f'Expected one timelineStepLabel function, found {n}')
+match = re.search(pattern, text, flags=re.S)
+if not match:
+    raise SystemExit('timelineStepLabel function block not found')
+text2 = text[:match.start()] + new_func + "\n\nfunction partTimelineFor" + text[match.end():]
 
 path.write_text(text2, encoding='utf-8')
 print('Timeline labels refined to slide-specific keywords.')
