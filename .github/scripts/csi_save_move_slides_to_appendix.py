@@ -89,7 +89,7 @@ for idx, obj in enumerate(objects):
     (appendix_indices if is_appendix else main_indices).append(idx)
 
 # User numbering refers to the current main presentation before this move.
-target_numbers = [26, 36, 40, 41]
+target_numbers = [38]
 if max(target_numbers) > len(main_indices):
     raise SystemExit(f'Only {len(main_indices)} main slides, cannot move {target_numbers}')
 
@@ -115,14 +115,13 @@ for idx, obj in enumerate(objects):
                 raise SystemExit(f'Target slide {idx+1} is already appendix')
             obj = obj[:m.start()] + '"appendix": true' + obj[m.end():]
         else:
-            # Insert an explicit appendix flag immediately after the opening brace.
             insertion = '\n    "appendix": true,'
             obj = obj[0] + insertion + obj[1:]
         moved.append(obj)
     else:
         remaining.append(obj)
 
-# Keep all existing slides in their relative order and append moved slides at the end of the annexes.
+# Keep all existing slides in their relative order and append the moved slide at the end of the annexes.
 new_objects = remaining + moved
 new_body = '\n  ' + ',\n  '.join(obj.strip() for obj in new_objects) + '\n'
 new_text = text[:array_start] + new_body + text[array_end:]
