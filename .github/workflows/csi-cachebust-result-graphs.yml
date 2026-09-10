@@ -1,0 +1,31 @@
+name: CSI cache-bust result graphs
+
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_cachebust_result_graphs.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version graph URLs
+        run: python .github/scripts/csi_cachebust_result_graphs.py
+
+      - name: Verify protected save unchanged
+        run: git diff --exit-code -- index_save.html
+
+      - name: Commit cache bust
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Force refresh of TWIXAV and VIBEX result graphs"
+          git push
