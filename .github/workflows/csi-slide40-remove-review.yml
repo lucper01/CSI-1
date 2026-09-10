@@ -1,0 +1,63 @@
+name: CSI slide40 remove review block
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-slide40-remove-review.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save
+        run: echo "SAVE_BEFORE=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Remove review protocols pipelines block from slide 40
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          fr = r'<div class=\"evt soft\" style=\"grid-column:1/span 4;grid-row:1\"><span class=\"ev-name\">Revue - protocoles</span><span class=\"ev-sub\">pipelines</span></div>'
+          en = r'<div class=\"evt soft\" style=\"grid-column:1/span 4;grid-row:1\"><span class=\"ev-name\">Review - protocols</span><span class=\"ev-sub\">pipelines</span></div>'
+          cfr = s.count(fr)
+          cen = s.count(en)
+          if cfr != 2:
+              raise SystemExit(f'Expected 2 French/root review blocks, found {cfr}')
+          if cen != 1:
+              raise SystemExit(f'Expected 1 English review block, found {cen}')
+          s = s.replace(fr, '')
+          s = s.replace(en, '')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Validate main slides script and requested change
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          if 'Revue - protocoles' in s or 'Review - protocols' in s:
+              raise SystemExit('Review block still present')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S)
+          main = next((x for x in scripts if 'const slides = [' in x), None)
+          if main is None:
+              raise SystemExit('Main slides script not found')
+          Path('/tmp/csi-main.js').write_text(main, encoding='utf-8')
+          PY
+          node --check /tmp/csi-main.js
+      - name: Verify save untouched
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BEFORE"
+          git diff --exit-code -- index_save.html
+      - name: Commit update and remove helper
+        run: |
+          rm .github/workflows/csi-slide40-remove-review.yml
+          git add index.html .github/workflows/csi-slide40-remove-review.yml
+          git commit -m "Remove review block from slide 40 publications"
+          git push
