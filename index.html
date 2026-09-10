@@ -3565,36 +3565,65 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
 
 // CSI_LOCAL_PART_TIMELINE
 function timelineStepLabel(s,E){
+  // CSI_TIMELINE_KEYWORDS_V2 - short keywords taken from the slides actually crossed inside the current local part.
   const study=String(s.study||'').trim();
-  let raw=String(s.kicker||s.title||'').trim();
-  if(study && raw.toUpperCase().startsWith(study.toUpperCase())){
-    raw=raw.slice(study.length).replace(/^\s*[-–:]\s*/,'').trim();
-  }
-  if(!raw) raw=String(s.title||'').trim();
+  const title=String(s.title||'').trim();
+  const kicker=String(s.kicker||'').trim();
+  const stripStudy=(value)=>{
+    let out=String(value||'').trim();
+    if(study){
+      const safe=study.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      out=out.replace(new RegExp('^'+safe+'\\s*[-:]?\\s*','i'),'').trim();
+    }
+    return out;
+  };
+
+  let raw=stripStudy(title);
+  if(!raw || raw.toUpperCase()===study.toUpperCase()) raw=stripStudy(kicker);
+  if(!raw) return study || '';
+
   const low=raw.toLowerCase();
-  if(E){
-    if(/introduction|\bintro\b/.test(low)) return 'INTRO';
-    if(/paradigm|method/.test(low)) return 'METHOD';
-    if(/result/.test(low)) return 'RESULTS';
-    if(/discussion/.test(low)) return 'DISCUSSION';
-    if(/conclusion/.test(low)) return 'CONCLUSION';
-    if(/planning/.test(low)) return 'PLANNING';
-    if(/activit/.test(low)) return 'ACTIVITIES';
-    if(/projection/.test(low)) return 'PROJECTION';
-    if(/question/.test(low)) return 'QUESTION';
-  }else{
-    if(/introduction|\bintro\b/.test(low)) return 'INTRO';
-    if(/paradigme|méthode|methode/.test(low)) return 'MÉTHODE';
-    if(/résultat|resultat/.test(low)) return 'RÉSULTATS';
-    if(/discussion/.test(low)) return 'DISCUSSION';
-    if(/conclusion/.test(low)) return 'CONCLUSION';
-    if(/planification/.test(low)) return 'PLANIFICATION';
-    if(/activité|activite/.test(low)) return 'ACTIVITÉS';
-    if(/projection/.test(low)) return 'PROJECTION';
-    if(/question/.test(low)) return 'QUESTION';
+  const rules=[
+    [/no space|no time/, 'NO SPACE / NO TIME'],
+    [/opposition/, 'OPPOSITION'],
+    [/manque à combler|gap to fill/, E?'GAP':'MANQUE'],
+    [/deux axes|two axes/, E?'TWO AXES':'DEUX AXES'],
+    [/référence visuelle|visual reference/, E?'REFERENCE':'RÉFÉRENCE'],
+    [/effet des conditions|condition effect/, 'CONDITIONS'],
+    [/effet de la taille|image-size effect|size effect/, E?'IMAGE SIZE':'TAILLE'],
+    [/fenêtre.*rétrécit|window.*narrow|largeur.*tbw|tbw.*width/, E?'TBW WIDTH':'LARGEUR TBW'],
+    [/ajouter l['’]olfaction|adding olfaction|add olfaction/, E?'ADD OLFACTION':'AJOUT OLFACTION'],
+    [/cer.*dpd|dpd.*cer/, 'CER / DPD'],
+    [/soutenance|defense/, E?'DEFENSE':'SOUTENANCE'],
+    [/planification|planning/, E?'PLANNING':'PLANIFICATION'],
+    [/discussion|interprétation|interpretation/, 'DISCUSSION'],
+    [/^méthode$|^method$/, E?'METHOD':'MÉTHODE'],
+    [/^paradigme$|^paradigm$/, E?'PARADIGM':'PARADIGME'],
+    [/^résultats?$|^results?$/, E?'RESULTS':'RÉSULTATS'],
+    [/^introduction$|^intro$/, 'INTRO']
+  ];
+  for(const [rx,label] of rules){ if(rx.test(low)) return label; }
+
+  raw=raw
+    .replace(/\b20\d{2}(?:\s*-\s*20\d{2})?\b/g,'')
+    .replace(/[–—]/g,'-')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  const stop=new Set(E
+    ? ['the','a','an','of','to','and','in','on','for','with','from','by','is','are','our','this','that','first','year','study','studies','effect']
+    : ['le','la','les','un','une','des','de','du','d','à','au','aux','et','en','dans','sur','pour','par','avec','sans','est','sont','ce','cette','ces','notre','nos','année','étude','études','effet']);
+  const words=raw.split(/[\s/:,-]+/).map(w=>w.trim()).filter(w=>w && !stop.has(w.toLowerCase()));
+  const picked=[];
+  for(const word of words){
+    const candidate=[...picked,word].join(' ');
+    if(candidate.length>19 && picked.length) break;
+    picked.push(word);
+    if(picked.length===2) break;
   }
-  raw=raw.replace(/^(axe|axis)\s*\d+\s*[-–:]\s*/i,'').trim();
-  return raw.length>22 ? raw.slice(0,21).trim()+'…' : raw.toUpperCase();
+  let label=(picked.join(' ')||raw).toUpperCase();
+  if(label.length>20) label=label.slice(0,19).trim()+'…';
+  return label;
 }
 
 function partTimelineFor(index){
