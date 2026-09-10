@@ -1,0 +1,51 @@
+name: CSI move slide 24
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-move-slide24.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Freeze save hash
+        run: |
+          echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Move slide
+        run: python tools/tmp_move_slide24.py
+      - name: Validate JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          target=next((s for s in scripts if 'const slides = [' in s), None)
+          if target is None:
+              raise SystemExit('slides script not found')
+          Path('/tmp/csi-slides.js').write_text(target, encoding='utf-8')
+          PY
+          node --check /tmp/csi-slides.js
+      - name: Verify save untouched
+        run: test "$(git hash-object index_save.html)" = "$SAVE_SHA"
+      - name: Commit move
+        run: |
+          git add index.html
+          git commit -m "Move slide 24 between slides 25 and 26"
+          git push
+      - name: Remove temporary helpers
+        run: |
+          git rm tools/tmp_move_slide24.py .github/workflows/tmp-move-slide24.yml
+          git commit -m "Remove temporary slide move helpers"
+          git push
