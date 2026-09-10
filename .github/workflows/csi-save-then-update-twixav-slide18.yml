@@ -1,0 +1,41 @@
+name: CSI save then update TWIXAV slide 18
+
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-then-update-twixav-slide18.yml'
+      - '.github/scripts/csi_save_then_update_twixav_slide18.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Save current CSI working version
+        run: |
+          cp index.html index_save.html
+          cmp -s index.html index_save.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_save.html
+          git commit -m "Save CSI before TWIXAV slide 18 titling update"
+
+      - name: Update TWIXAV slide 18
+        run: python .github/scripts/csi_save_then_update_twixav_slide18.py
+
+      - name: Verify save stayed frozen after update
+        run: |
+          git diff --exit-code HEAD~1 -- index_save.html || true
+          git diff --exit-code -- index_save.html
+
+      - name: Commit working slide update
+        run: |
+          git add index.html
+          git commit -m "Improve TWIXAV slide 18 figure titles and effect cards"
+          git push
