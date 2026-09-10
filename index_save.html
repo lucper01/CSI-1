@@ -2178,6 +2178,29 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
 </style>
 
   <link rel="stylesheet" href="assets/csi-export.css?v=1">
+
+<style id="csi-vibex-manual-local-timeline">
+/* CSI_VIBEX_MANUAL_LOCAL_TIMELINE */
+.deck-footer .footer-part-timeline.local .part-local-label{
+  display:inline-flex;align-items:center;max-width:118px;padding:4px 8px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent-strong);font-weight:950;letter-spacing:.045em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.vibex-demo-row{display:grid;grid-template-columns:minmax(0,520px) 270px;gap:12px;align-items:stretch;margin-top:14px;max-width:810px}
+.vibex-demo-row .method-demo-wrap{margin-top:0;min-width:0}
+.vibex-demo-row .method-demo-wrap .study-demo-launch{height:100%;min-height:132px}
+.vibex-manual-demo{border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--white) 86%,transparent);padding:9px 10px 10px;box-shadow:0 8px 20px color-mix(in srgb,#2f7d5a 8%,transparent);min-width:0}
+.vibex-manual-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;color:var(--muted);font-size:.63rem;line-height:1;text-transform:uppercase;letter-spacing:.07em;font-weight:850}
+.vibex-manual-head b{color:#2f7d5a;font-size:.68rem;letter-spacing:.02em}
+.vibex-manual-frame{display:block;width:100%;height:78px;padding:0;border:0;border-radius:11px;overflow:hidden;background:color-mix(in srgb,var(--accent-pale) 74%,var(--white));cursor:pointer;box-shadow:inset 0 0 0 1px var(--line)}
+.vibex-manual-frame img{display:block;width:100%;height:100%;object-fit:cover}
+.vibex-manual-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}
+.vibex-manual-controls button{border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);padding:4px 5px;font-size:.64rem;line-height:1.15;font-weight:800;cursor:pointer;white-space:nowrap}
+.vibex-manual-controls button:hover{background:var(--accent-pale);color:var(--text)}
+.vibex-manual-controls button.active{background:color-mix(in srgb,#2f7d5a 14%,var(--white));border-color:color-mix(in srgb,#2f7d5a 42%,var(--line));color:#2f7d5a;font-weight:950}
+@media(max-width:900px){.vibex-demo-row{grid-template-columns:1fr;max-width:none}.vibex-demo-row .method-demo-wrap .study-demo-launch{min-height:0}.vibex-manual-demo{width:min(100%,360px)}.vibex-manual-frame{height:96px}}
+</style>
+
 </head>
 <body data-view="slides">
   <a class="skip-link" href="#deck">Aller à la présentation</a>
@@ -2485,23 +2508,23 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
     "section": "Introduction générale",
     "kicker": "Le contraste olfactif",
     "title": "« No space, no time? » - le paradoxe de l’attention olfactive",
-    "lead": "Sela et Sobel (2010) décrivent une modalité dont les contraintes spatiales et temporelles diffèrent fortement de celles de la vision et de l’audition. La thèse transforme cette opposition en question expérimentale.",
-    "content": "<div class=\"sela-slide-layout\"><div class=\"sela-theory-copy\"><div class=\"grid three\"><div class=\"card\"><div class=\"mono\">Espace</div><h3>Une spatialisation limitée</h3><p>Les capacités humaines de localisation olfactive sont réduites relativement à la vision et à l’audition, ce qui contraint la sélection spatiale et la capture attentionnelle.</p></div><div class=\"card\"><div class=\"mono\">Temps</div><h3>Un échantillonnage par le sniff</h3><p>L’information olfactive est échantillonnée de façon discontinue au rythme des inspirations, avec une temporalité propre à la délivrance et à la respiration.</p></div><div class=\"card dark\"><div class=\"mono\">STOLF</div><h3>Un manque à combler</h3><p>Ces contraintes abolissent-elles la structuration spatio-temporelle, ou modifient-elles surtout la manière dont elle devient disponible à la perception et à l’attention ?</p></div></div><div class=\"callout\" style=\"margin-top:16px\"><strong>Point de départ :</strong> « No space, no time? » est une question de travail, pas l’affirmation que l’olfaction serait dépourvue de représentations spatiales ou temporelles.</div><div class=\"csi-cite\"><strong>Références :</strong> Sela, L. & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div></div></div>",
+    "lead": "Sela et Sobel (2010) décrivent une modalité présentant des spécificités spatiales et temporelles qui la distinguent fortement de la vision et de l’audition. La thèse transforme cette opposition en question expérimentale.",
+    "content": "<div class=\"sela-slide-layout\"><div class=\"sela-theory-copy\"><div class=\"grid three\"><div class=\"card\"><div class=\"mono\">Espace</div><h3>Une spatialisation limitée</h3><p>Les capacités humaines de localisation olfactive sont réduites relativement à la vision et à l’audition, ce qui contraint la sélection spatiale et la capture attentionnelle.</p></div><div class=\"card\"><div class=\"mono\">Temps</div><h3>Un échantillonnage par le sniff</h3><p>L’information olfactive est échantillonnée de façon discontinue au rythme des inspirations, avec une temporalité propre à la délivrance et à la respiration.</p></div><div class=\"card dark\"><div class=\"mono\">STOLF</div><h3>Un manque à combler</h3><p>Ces spécificités empêchent-elles la structuration spatio-temporelle, ou modifient-elles surtout la manière dont elle devient disponible à la perception et à l’attention ?</p></div></div><div class=\"callout\" style=\"margin-top:16px\"><strong>Point de départ :</strong> « No space, no time? » est une question de travail, pas l’affirmation que l’olfaction serait dépourvue de représentations spatiales ou temporelles.</div><div class=\"csi-cite\"><strong>Références :</strong> Sela, L. & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div></div></div>",
     "notes": "Présenter Sela et Sobel comme un verrou théorique, pas comme une preuve d’absence d’espace ou de temps olfactif.",
     "_fr": {
       "section": "Introduction générale",
       "kicker": "Le contraste olfactif",
       "title": "« No space, no time? » - le paradoxe de l’attention olfactive",
-      "lead": "Sela et Sobel (2010) décrivent une modalité dont les contraintes spatiales et temporelles diffèrent fortement de celles de la vision et de l’audition. La thèse transforme cette opposition en question expérimentale.",
-      "content": "<div class=\"sela-slide-layout\"><div class=\"sela-theory-copy\"><div class=\"grid three\"><div class=\"card\"><div class=\"mono\">Espace</div><h3>Une spatialisation limitée</h3><p>Les capacités humaines de localisation olfactive sont réduites relativement à la vision et à l’audition, ce qui contraint la sélection spatiale et la capture attentionnelle.</p></div><div class=\"card\"><div class=\"mono\">Temps</div><h3>Un échantillonnage par le sniff</h3><p>L’information olfactive est échantillonnée de façon discontinue au rythme des inspirations, avec une temporalité propre à la délivrance et à la respiration.</p></div><div class=\"card dark\"><div class=\"mono\">STOLF</div><h3>Un manque à combler</h3><p>Ces contraintes abolissent-elles la structuration spatio-temporelle, ou modifient-elles surtout la manière dont elle devient disponible à la perception et à l’attention ?</p></div></div><div class=\"callout\" style=\"margin-top:16px\"><strong>Point de départ :</strong> « No space, no time? » est une question de travail, pas l’affirmation que l’olfaction serait dépourvue de représentations spatiales ou temporelles.</div><div class=\"csi-cite\"><strong>Références :</strong> Sela, L. & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div></div></div>",
+      "lead": "Sela et Sobel (2010) décrivent une modalité présentant des spécificités spatiales et temporelles qui la distinguent fortement de la vision et de l’audition. La thèse transforme cette opposition en question expérimentale.",
+      "content": "<div class=\"sela-slide-layout\"><div class=\"sela-theory-copy\"><div class=\"grid three\"><div class=\"card\"><div class=\"mono\">Espace</div><h3>Une spatialisation limitée</h3><p>Les capacités humaines de localisation olfactive sont réduites relativement à la vision et à l’audition, ce qui contraint la sélection spatiale et la capture attentionnelle.</p></div><div class=\"card\"><div class=\"mono\">Temps</div><h3>Un échantillonnage par le sniff</h3><p>L’information olfactive est échantillonnée de façon discontinue au rythme des inspirations, avec une temporalité propre à la délivrance et à la respiration.</p></div><div class=\"card dark\"><div class=\"mono\">STOLF</div><h3>Un manque à combler</h3><p>Ces spécificités empêchent-elles la structuration spatio-temporelle, ou modifient-elles surtout la manière dont elle devient disponible à la perception et à l’attention ?</p></div></div><div class=\"callout\" style=\"margin-top:16px\"><strong>Point de départ :</strong> « No space, no time? » est une question de travail, pas l’affirmation que l’olfaction serait dépourvue de représentations spatiales ou temporelles.</div><div class=\"csi-cite\"><strong>Références :</strong> Sela, L. & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div></div></div>",
       "notes": "Présenter Sela et Sobel comme un verrou théorique, pas comme une preuve d’absence d’espace ou de temps olfactif."
     },
     "_en": {
       "section": "General introduction",
       "kicker": "The olfactory contrast",
       "title": "“No space, no time?” - the paradox of olfactory attention",
-      "lead": "Sela and Sobel (2010) describe a modality whose spatial and temporal constraints differ markedly from those of vision and audition. The thesis turns this asymmetry into an experimental question.",
-      "content": "<div class=\"grid three\"><div class=\"card\"><div class=\"mono\">SPACE</div><h3>Limited spontaneous spatialization</h3><p>Human olfactory localization is less precise and less directly available to attention than visual or auditory localization.</p></div><div class=\"card\"><div class=\"mono\">TIME</div><h3>Sampling through sniffing</h3><p>Olfactory information is sampled discontinuously during inhalations, so respiratory dynamics participate in the temporal structure of the stimulus.</p></div><div class=\"card dark\"><div class=\"mono\">STOLF</div><h3>The constraint to test</h3><p>Do these constraints abolish spatio-temporal organization, or do they change how it becomes available to perception and attention?</p></div></div><div class=\"callout\" style=\"margin-top:16px\"><strong>Starting point:</strong> “No space, no time?” is a working question, not a claim that olfaction lacks spatial or temporal representations.</div><div class=\"csi-cite\"><strong>References:</strong> Sela, L., & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div>",
+      "lead": "Sela and Sobel (2010) describe a modality with distinctive spatial and temporal specificities that set it apart from vision and audition. The thesis turns this opposition into an experimental question.",
+      "content": "<div class=\"grid three\"><div class=\"card\"><div class=\"mono\">SPACE</div><h3>Limited spontaneous spatialization</h3><p>Human olfactory localization is less precise and less directly available to attention than visual or auditory localization.</p></div><div class=\"card\"><div class=\"mono\">TIME</div><h3>Sampling through sniffing</h3><p>Olfactory information is sampled discontinuously during inhalations, so respiratory dynamics participate in the temporal structure of the stimulus.</p></div><div class=\"card dark\"><div class=\"mono\">STOLF</div><h3>The specificity to test</h3><p>Do these specificities prevent spatio-temporal organization, or do they mainly change how it becomes available to perception and attention?</p></div></div><div class=\"callout\" style=\"margin-top:16px\"><strong>Starting point:</strong> “No space, no time?” is a working question, not a claim that olfaction lacks spatial or temporal representations.</div><div class=\"csi-cite\"><strong>References:</strong> Sela, L., & Sobel, N. (2010). Human olfaction: a constant state of change-blindness. Experimental Brain Research, 205, 13-29.</div>",
       "notes": "Introduce the contrast with vision and audition, then derive the two axes."
     },
     "chapter": "Cadre théorique"
@@ -2804,7 +2827,7 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
       "kicker": "VIBEX - Méthode",
       "title": "VIBEX - Méthode",
       "lead": "Ligne de base visuelle avant introduction de facteurs olfactifs.",
-      "content": "<div class=\"v16-study\" data-study=\"VIBEX\">\n      <div class=\"v16-study-head\"><div><span class=\"v16-acronym\">VIBEX</span><h3>Visual Boundary Extension</h3></div><span class=\"v16-status done\">Prétest réalisé</span></div>\n      <div class=\"v16-study-grid\">\n        <article class=\"v16-study-card primary\"><span>Principe</span><p>Établir une ligne de base visuelle pour l'extension et la contraction des limites d'une scène mémorisée.</p></article>\n        <article class=\"v16-study-card\"><span>Hypothèses</span><p>La mémoire de scène produit un biais systématique des limites; son amplitude et sa direction dépendent des propriétés de l'image et du cadrage.</p></article>\n        <article class=\"v16-study-card\"><span>Paradigme</span><p>Comparaison de scènes avec conditions LL, SS, LS et SL, plusieurs tailles et jugement identique / différent.</p></article>\n        <article class=\"v16-study-card\"><span>Mesures / sortie</span><p>Proportion de réponses, exactitude, RT et indice global d'extension / contraction des limites.</p></article>\n      </div><div class=\"v16-callout\"><strong>Avancement :</strong> paradigme fonctionnel, données de prétest disponibles, analyses et figures en consolidation pour une valorisation courte.</div><div class=\"v16-ref\"><strong>Références :</strong><span>Intraub & Richardson, 1989; Intraub, 2012; Bainbridge & Baker, 2020; Park et al., 2024; Hall & Geng, 2025.</span></div>\n    </div><div class=\"method-demo-wrap\"><button class=\"study-demo-launch\" type=\"button\" data-demo-open=\"vibex\" style=\"--demo-study:#2f7d5a\"><span class=\"demo-launch-kicker\">PARADIGME INTERACTIF</span><strong>Voir un essai VIBEX</strong><span>Fixation 300 ms - image S 200 ms - masque 1000 ms - image L 200 ms</span><i>Cliquer pour agrandir</i></button></div><div class=\"study-floating\" aria-label=\"Ressources VIBEX\"><a class=\"float-card poster\" href=\"affiches/VIBEX.pdf\" target=\"_blank\" rel=\"noopener\"><b>Affiche</b><span>VIBEX</span></a><button class=\"float-card apparatus-open\" type=\"button\" data-apparatus-study=\"VIBEX\" data-apparatus-items=\"PsychoPy\"><b>Appareillage</b><span>PsychoPy</span></button><div class=\"float-card m1\"><b>Mémoire M1</b><span>Olivia Hiridjee</span></div></div>",
+      "content": "<div class=\"v16-study\" data-study=\"VIBEX\">\n      <div class=\"v16-study-head\"><div><span class=\"v16-acronym\">VIBEX</span><h3>Visual Boundary Extension</h3></div><span class=\"v16-status done\">Prétest réalisé</span></div>\n      <div class=\"v16-study-grid\">\n        <article class=\"v16-study-card primary\"><span>Principe</span><p>Établir une ligne de base visuelle pour l'extension et la contraction des limites d'une scène mémorisée.</p></article>\n        <article class=\"v16-study-card\"><span>Hypothèses</span><p>La mémoire de scène produit un biais systématique des limites; son amplitude et sa direction dépendent des propriétés de l'image et du cadrage.</p></article>\n        <article class=\"v16-study-card\"><span>Paradigme</span><p>Comparaison de scènes avec conditions LL, SS, LS et SL, plusieurs tailles et jugement identique / différent.</p></article>\n        <article class=\"v16-study-card\"><span>Mesures / sortie</span><p>Proportion de réponses, exactitude, RT et indice global d'extension / contraction des limites.</p></article>\n      </div><div class=\"v16-callout\"><strong>Avancement :</strong> paradigme fonctionnel, données de prétest disponibles, analyses et figures en consolidation pour une valorisation courte.</div><div class=\"v16-ref\"><strong>Références :</strong><span>Intraub & Richardson, 1989; Intraub, 2012; Bainbridge & Baker, 2020; Park et al., 2024; Hall & Geng, 2025.</span></div>\n    </div><div class=\"vibex-demo-row\"><div class=\"method-demo-wrap\"><button class=\"study-demo-launch\" type=\"button\" data-demo-open=\"vibex\" style=\"--demo-study:#2f7d5a\"><span class=\"demo-launch-kicker\">PARADIGME INTERACTIF</span><strong>Voir un essai VIBEX</strong><span>Fixation 300 ms - image S 200 ms - masque 1000 ms - image L 200 ms</span><i>Cliquer pour agrandir</i></button></div><div class=\"vibex-manual-demo\" data-vibex-manual data-vib-step-current=\"0\"><div class=\"vibex-manual-head\"><span>APERÇU MANUEL</span><b data-vibex-manual-label>Image 1</b></div><button class=\"vibex-manual-frame\" type=\"button\" data-vibex-manual-next aria-label=\"Passer à l’étape VIBEX suivante\"><img data-vibex-manual-img src=\"assets/demo/image_S_16.jpg\" alt=\"VIBEX image 1 - cadrage serré\"></button><div class=\"vibex-manual-controls\" role=\"group\" aria-label=\"Étapes de l’essai VIBEX\"><button type=\"button\" class=\"active\" data-vib-step=\"0\">Image 1</button><button type=\"button\" data-vib-step=\"1\">Masque</button><button type=\"button\" data-vib-step=\"2\">Image 2</button></div></div></div><div class=\"study-floating\" aria-label=\"Ressources VIBEX\"><a class=\"float-card poster\" href=\"affiches/VIBEX.pdf\" target=\"_blank\" rel=\"noopener\"><b>Affiche</b><span>VIBEX</span></a><button class=\"float-card apparatus-open\" type=\"button\" data-apparatus-study=\"VIBEX\" data-apparatus-items=\"PsychoPy\"><b>Appareillage</b><span>PsychoPy</span></button><div class=\"float-card m1\"><b>Mémoire M1</b><span>Olivia Hiridjee</span></div></div>",
       "notes": "Présenter VIBEX comme la référence nécessaire pour interpréter ensuite VIBOLF et COBEX.",
       "study": "VIBEX"
     },
@@ -2813,14 +2836,14 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
       "kicker": "Axis 2 - completed study",
       "title": "VIBEX",
       "lead": "Visual baseline before introducing olfactory factors.",
-      "content": "<div class=\"v16-study\" data-study=\"VIBEX\">\n      <div class=\"v16-study-head\"><div><span class=\"v16-acronym\">VIBEX</span><h3>Visual Boundary Extension</h3></div><span class=\"v16-status done\">Pre-test completed</span></div>\n      <div class=\"v16-study-grid\">\n        <article class=\"v16-study-card primary\"><span>Principle</span><p>Establish a visual baseline for extension and contraction of the boundaries of a remembered scene.</p></article>\n        <article class=\"v16-study-card\"><span>Hypotheses</span><p>Scene memory produces a systematic boundary bias; its magnitude and direction depend on image properties and framing.</p></article>\n        <article class=\"v16-study-card\"><span>Paradigm</span><p>Comparison of scenes with LL, SS, LS and SL conditions, several sizes and same / different judgments.</p></article>\n        <article class=\"v16-study-card\"><span>Measures / output</span><p>Response proportion, accuracy, RT and global boundary extension / contraction index.</p></article>\n      </div><div class=\"v16-callout\"><strong>Progress:</strong> functional paradigm, pre-test data available, analyses and figures being consolidated for a short-format publication.</div><div class=\"v16-ref\"><strong>Références :</strong><span>Intraub & Richardson, 1989; Intraub, 2012; Bainbridge & Baker, 2020; Park et al., 2024; Hall & Geng, 2025.</span></div>\n    </div><div class=\"method-demo-wrap\"><button class=\"study-demo-launch\" type=\"button\" data-demo-open=\"vibex\" style=\"--demo-study:#2f7d5a\"><span class=\"demo-launch-kicker\">INTERACTIVE PARADIGM</span><strong>Run a VIBEX trial</strong><span>Fixation 300 ms - S image 200 ms - mask 1000 ms - L image 200 ms</span><i>Click to enlarge</i></button></div>",
+      "content": "<div class=\"v16-study\" data-study=\"VIBEX\">\n      <div class=\"v16-study-head\"><div><span class=\"v16-acronym\">VIBEX</span><h3>Visual Boundary Extension</h3></div><span class=\"v16-status done\">Pre-test completed</span></div>\n      <div class=\"v16-study-grid\">\n        <article class=\"v16-study-card primary\"><span>Principle</span><p>Establish a visual baseline for extension and contraction of the boundaries of a remembered scene.</p></article>\n        <article class=\"v16-study-card\"><span>Hypotheses</span><p>Scene memory produces a systematic boundary bias; its magnitude and direction depend on image properties and framing.</p></article>\n        <article class=\"v16-study-card\"><span>Paradigm</span><p>Comparison of scenes with LL, SS, LS and SL conditions, several sizes and same / different judgments.</p></article>\n        <article class=\"v16-study-card\"><span>Measures / output</span><p>Response proportion, accuracy, RT and global boundary extension / contraction index.</p></article>\n      </div><div class=\"v16-callout\"><strong>Progress:</strong> functional paradigm, pre-test data available, analyses and figures being consolidated for a short-format publication.</div><div class=\"v16-ref\"><strong>Références :</strong><span>Intraub & Richardson, 1989; Intraub, 2012; Bainbridge & Baker, 2020; Park et al., 2024; Hall & Geng, 2025.</span></div>\n    </div><div class=\"vibex-demo-row\"><div class=\"method-demo-wrap\"><button class=\"study-demo-launch\" type=\"button\" data-demo-open=\"vibex\" style=\"--demo-study:#2f7d5a\"><span class=\"demo-launch-kicker\">INTERACTIVE PARADIGM</span><strong>Run a VIBEX trial</strong><span>Fixation 300 ms - S image 200 ms - mask 1000 ms - L image 200 ms</span><i>Click to enlarge</i></button></div><div class=\"vibex-manual-demo\" data-vibex-manual data-vib-step-current=\"0\"><div class=\"vibex-manual-head\"><span>MANUAL PREVIEW</span><b data-vibex-manual-label>Image 1</b></div><button class=\"vibex-manual-frame\" type=\"button\" data-vibex-manual-next aria-label=\"Go to the next VIBEX step\"><img data-vibex-manual-img src=\"assets/demo/image_S_16.jpg\" alt=\"VIBEX image 1 - close framing\"></button><div class=\"vibex-manual-controls\" role=\"group\" aria-label=\"VIBEX trial steps\"><button type=\"button\" class=\"active\" data-vib-step=\"0\">Image 1</button><button type=\"button\" data-vib-step=\"1\">Mask</button><button type=\"button\" data-vib-step=\"2\">Image 2</button></div></div></div>",
       "notes": "Present VIBEX as the reference needed to interpret VIBOLF and COBEX later."
     },
     "section": "Études de l’année 1",
     "kicker": "VIBEX - Méthode",
     "title": "VIBEX - Méthode",
     "lead": "Ligne de base visuelle avant introduction de facteurs olfactifs.",
-    "content": "<div class=\"v16-study\" data-study=\"VIBEX\">\n      <div class=\"v16-study-head\"><div><span class=\"v16-acronym\">VIBEX</span><h3>Visual Boundary Extension</h3></div><span class=\"v16-status done\">Prétest réalisé</span></div>\n      <div class=\"v16-study-grid\">\n        <article class=\"v16-study-card primary\"><span>Principe</span><p>Établir une ligne de base visuelle pour l'extension et la contraction des limites d'une scène mémorisée.</p></article>\n        <article class=\"v16-study-card\"><span>Hypothèses</span><p>La mémoire de scène produit un biais systématique des limites; son amplitude et sa direction dépendent des propriétés de l'image et du cadrage.</p></article>\n        <article class=\"v16-study-card\"><span>Paradigme</span><p>Comparaison de scènes avec conditions LL, SS, LS et SL, plusieurs tailles et jugement identique / différent.</p></article>\n        <article class=\"v16-study-card\"><span>Mesures / sortie</span><p>Proportion de réponses, exactitude, RT et indice global d'extension / contraction des limites.</p></article>\n      </div><div class=\"v16-callout\"><strong>Avancement :</strong> paradigme fonctionnel, données de prétest disponibles, analyses et figures en consolidation pour une valorisation courte.</div><div class=\"v16-ref\"><strong>Références :</strong><span>Intraub & Richardson, 1989; Intraub, 2012; Bainbridge & Baker, 2020; Park et al., 2024; Hall & Geng, 2025.</span></div>\n    </div><div class=\"method-demo-wrap\"><button class=\"study-demo-launch\" type=\"button\" data-demo-open=\"vibex\" style=\"--demo-study:#2f7d5a\"><span class=\"demo-launch-kicker\">PARADIGME INTERACTIF</span><strong>Voir un essai VIBEX</strong><span>Fixation 300 ms - image S 200 ms - masque 1000 ms - image L 200 ms</span><i>Cliquer pour agrandir</i></button></div><div class=\"study-floating\" aria-label=\"Ressources VIBEX\"><a class=\"float-card poster\" href=\"affiches/VIBEX.pdf\" target=\"_blank\" rel=\"noopener\"><b>Affiche</b><span>VIBEX</span></a><button class=\"float-card apparatus-open\" type=\"button\" data-apparatus-study=\"VIBEX\" data-apparatus-items=\"PsychoPy\"><b>Appareillage</b><span>PsychoPy</span></button><div class=\"float-card m1\"><b>Mémoire M1</b><span>Olivia Hiridjee</span></div></div>",
+    "content": "<div class=\"v16-study\" data-study=\"VIBEX\">\n      <div class=\"v16-study-head\"><div><span class=\"v16-acronym\">VIBEX</span><h3>Visual Boundary Extension</h3></div><span class=\"v16-status done\">Prétest réalisé</span></div>\n      <div class=\"v16-study-grid\">\n        <article class=\"v16-study-card primary\"><span>Principe</span><p>Établir une ligne de base visuelle pour l'extension et la contraction des limites d'une scène mémorisée.</p></article>\n        <article class=\"v16-study-card\"><span>Hypothèses</span><p>La mémoire de scène produit un biais systématique des limites; son amplitude et sa direction dépendent des propriétés de l'image et du cadrage.</p></article>\n        <article class=\"v16-study-card\"><span>Paradigme</span><p>Comparaison de scènes avec conditions LL, SS, LS et SL, plusieurs tailles et jugement identique / différent.</p></article>\n        <article class=\"v16-study-card\"><span>Mesures / sortie</span><p>Proportion de réponses, exactitude, RT et indice global d'extension / contraction des limites.</p></article>\n      </div><div class=\"v16-callout\"><strong>Avancement :</strong> paradigme fonctionnel, données de prétest disponibles, analyses et figures en consolidation pour une valorisation courte.</div><div class=\"v16-ref\"><strong>Références :</strong><span>Intraub & Richardson, 1989; Intraub, 2012; Bainbridge & Baker, 2020; Park et al., 2024; Hall & Geng, 2025.</span></div>\n    </div><div class=\"vibex-demo-row\"><div class=\"method-demo-wrap\"><button class=\"study-demo-launch\" type=\"button\" data-demo-open=\"vibex\" style=\"--demo-study:#2f7d5a\"><span class=\"demo-launch-kicker\">PARADIGME INTERACTIF</span><strong>Voir un essai VIBEX</strong><span>Fixation 300 ms - image S 200 ms - masque 1000 ms - image L 200 ms</span><i>Cliquer pour agrandir</i></button></div><div class=\"vibex-manual-demo\" data-vibex-manual data-vib-step-current=\"0\"><div class=\"vibex-manual-head\"><span>APERÇU MANUEL</span><b data-vibex-manual-label>Image 1</b></div><button class=\"vibex-manual-frame\" type=\"button\" data-vibex-manual-next aria-label=\"Passer à l’étape VIBEX suivante\"><img data-vibex-manual-img src=\"assets/demo/image_S_16.jpg\" alt=\"VIBEX image 1 - cadrage serré\"></button><div class=\"vibex-manual-controls\" role=\"group\" aria-label=\"Étapes de l’essai VIBEX\"><button type=\"button\" class=\"active\" data-vib-step=\"0\">Image 1</button><button type=\"button\" data-vib-step=\"1\">Masque</button><button type=\"button\" data-vib-step=\"2\">Image 2</button></div></div></div><div class=\"study-floating\" aria-label=\"Ressources VIBEX\"><a class=\"float-card poster\" href=\"affiches/VIBEX.pdf\" target=\"_blank\" rel=\"noopener\"><b>Affiche</b><span>VIBEX</span></a><button class=\"float-card apparatus-open\" type=\"button\" data-apparatus-study=\"VIBEX\" data-apparatus-items=\"PsychoPy\"><b>Appareillage</b><span>PsychoPy</span></button><div class=\"float-card m1\"><b>Mémoire M1</b><span>Olivia Hiridjee</span></div></div>",
     "notes": "Présenter VIBEX comme la référence nécessaire pour interpréter ensuite VIBOLF et COBEX."
   },
   {
@@ -3541,78 +3564,88 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
   function esc(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
 
 // CSI_LOCAL_PART_TIMELINE
-function partTimelineFor(index){
-  const n=index+1;
-  const s=slides[index]||{};
-  const E=document.documentElement.lang==='en';
-  const txt=(String(s.section||'')+' '+String(s.chapter||'')+' '+String(s.kicker||'')+' '+String(s.title||'')+' '+String(s.study||'')).toUpperCase();
-  const study=String(s.study||'').toUpperCase();
-  if(n>=4&&n<=12){
-    const steps=E
-      ? ['VISION + AUDITION','TIME','SPACE','INTEGRATION','SYNTHESIS','OLFACTION','AXES','INFLUENCE']
-      : ['VISION + AUDITION','TEMPS','ESPACE','INTÉGRATION','SYNTHÈSE','OLFACTION','AXES','INFLUENCE'];
-    const active={4:0,5:1,6:2,7:3,8:4,9:5,10:5,11:6,12:7}[n];
-    return {steps,active};
+function timelineStepLabel(s,E){
+  const study=String(s.study||'').trim();
+  let raw=String(s.kicker||s.title||'').trim();
+  if(study && raw.toUpperCase().startsWith(study.toUpperCase())){
+    raw=raw.slice(study.length).replace(/^\s*[-–:]\s*/,'').trim();
   }
-  if(n>=14&&n<=15){
-    return {steps:E?['AXES','STUDY PROGRAM']:['AXES','PROGRAMME D\'ÉTUDES'],active:n===14?0:1};
+  if(!raw) raw=String(s.title||'').trim();
+  const low=raw.toLowerCase();
+  if(E){
+    if(/introduction|\bintro\b/.test(low)) return 'INTRO';
+    if(/paradigm|method/.test(low)) return 'METHOD';
+    if(/result/.test(low)) return 'RESULTS';
+    if(/discussion/.test(low)) return 'DISCUSSION';
+    if(/conclusion/.test(low)) return 'CONCLUSION';
+    if(/planning/.test(low)) return 'PLANNING';
+    if(/activit/.test(low)) return 'ACTIVITIES';
+    if(/projection/.test(low)) return 'PROJECTION';
+    if(/question/.test(low)) return 'QUESTION';
+  }else{
+    if(/introduction|\bintro\b/.test(low)) return 'INTRO';
+    if(/paradigme|méthode|methode/.test(low)) return 'MÉTHODE';
+    if(/résultat|resultat/.test(low)) return 'RÉSULTATS';
+    if(/discussion/.test(low)) return 'DISCUSSION';
+    if(/conclusion/.test(low)) return 'CONCLUSION';
+    if(/planification/.test(low)) return 'PLANIFICATION';
+    if(/activité|activite/.test(low)) return 'ACTIVITÉS';
+    if(/projection/.test(low)) return 'PROJECTION';
+    if(/question/.test(low)) return 'QUESTION';
   }
-  if(txt.includes('ANNÉE 1') || txt.includes('YEAR 1')){
-    const steps=E
-      ? ['REVIEW','TWIXAV','VIBEX','FLUXOLF','ACTIVITIES','TRANSITION']
-      : ['BILAN','TWIXAV','VIBEX','FLUXOLF','ACTIVITÉS','TRANSITION'];
-    let active=0;
-    if(study==='TWIXAV' || txt.includes('TWIXAV')) active=1;
-    else if(study==='VIBEX' || txt.includes('VIBEX')) active=2;
-    else if(study==='FLUXOLF' || txt.includes('FLUXOLF')) active=3;
-    else if(txt.includes('ACTIVITÉS') || txt.includes('ACTIVITIES') || txt.includes('ENSEIGNEMENT')) active=4;
-    else if(txt.includes('TRANSITION') || txt.includes('DEUXIÈME ANNÉE') || txt.includes('YEAR 2')) active=5;
-    return {steps,active};
-  }
-  if(txt.includes('ANNÉE 2') || txt.includes('YEAR 2') || study==='SOFT' || study==='VIBOLF' || study==='TWIXOLF' || txt.includes('2026-2027')){
-    const steps=E
-      ? ['PRIORITIES','SOFT','VIBOLF','TWIXOLF','TECHNICAL','ACTIVITIES','PUBLICATIONS']
-      : ['PRIORITÉS','SOFT','VIBOLF','TWIXOLF','TECHNIQUE','ACTIVITÉS','PUBLICATIONS'];
-    let active=0;
-    if(study==='SOFT' || txt.includes('SOFT')) active=1;
-    if(study==='VIBOLF' || txt.includes('VIBOLF')) active=2;
-    if(study==='TWIXOLF' || txt.includes('TWIXOLF')) active=3;
-    if(txt.includes('DIFFICULTÉS TECHNIQUES') || txt.includes('TECHNICAL DIFFICULTIES')) active=4;
-    if(txt.includes('ACTIVITÉS') || txt.includes('ACTIVITIES')) active=5;
-    if(txt.includes('PUBLICATIONS')) active=6;
-    return {steps,active};
-  }
-  if(study==='SOLAR' || study==='BRAUD' || study==='BRAUDOLF' || txt.includes('COMPLÉMENT') || txt.includes('COMPLEMENT')){
-    const steps=E
-      ? ['OVERVIEW','SOLAR','BRAUD','BRAUDOLF']
-      : ['VUE D\'ENSEMBLE','SOLAR','BRAUD','BRAUDOLF'];
-    let active=0;
-    if(study==='SOLAR' || txt.includes('SOLAR')) active=1;
-    else if(study==='BRAUDOLF' || txt.includes('BRAUDOLF')) active=3;
-    else if(study==='BRAUD' || txt.includes('BRAUD')) active=2;
-    return {steps,active};
-  }
-  if(txt.includes('RÉTROPLANNING') || txt.includes('RETROPLANNING') || txt.includes('TIMELINE') || txt.includes('SOUTENANCE') || txt.includes('DEFENSE')){
-    const steps=E?['GLOBAL','STUDIES','DEFENSE']:['GLOBAL','ÉTUDES','SOUTENANCE'];
-    let active=0;
-    if(txt.includes('ÉTUDES') || txt.includes('STUDY')) active=1;
-    if(txt.includes('SOUTENANCE') || txt.includes('DEFENSE') || txt.includes('JUSQU')) active=2;
-    return {steps,active};
-  }
-  if(txt.includes('DISCUSSION') || txt.includes('BILAN') || txt.includes('MERCI') || txt.includes('THANK')){
-    const steps=E?['SUMMARY','DISCUSSION','THANK YOU']:['BILAN','DISCUSSION','MERCI'];
-    let active=0;
-    if(txt.includes('DISCUSSION') || txt.includes('POINTS')) active=1;
-    if(txt.includes('MERCI') || txt.includes('THANK')) active=2;
-    return {steps,active};
-  }
-  return null;
+  raw=raw.replace(/^(axe|axis)\s*\d+\s*[-–:]\s*/i,'').trim();
+  return raw.length>22 ? raw.slice(0,21).trim()+'…' : raw.toUpperCase();
 }
+
+function partTimelineFor(index){
+  const s=slides[index];
+  if(!s || s.appendix || s.divider) return null;
+  const E=document.documentElement.lang==='en';
+  const vis=visibleIndexes();
+  const study=String(s.study||'').trim().toUpperCase();
+  const chapter=String(s.chapter||'').trim();
+  const section=String(s.section||'').trim();
+  let members=[];
+  let group='';
+
+  if(study){
+    members=vis.filter(i=>{
+      const x=slides[i];
+      return x && !x.appendix && !x.divider && String(x.study||'').trim().toUpperCase()===study;
+    });
+    group=study;
+  }else{
+    members=vis.filter(i=>{
+      const x=slides[i];
+      if(!x || x.appendix || x.divider || String(x.study||'').trim()) return false;
+      if(chapter) return String(x.chapter||'').trim()===chapter;
+      return section && String(x.section||'').trim()===section;
+    });
+    group=section||chapter;
+  }
+
+  if(!members.includes(index)) members.push(index);
+  members.sort((a,b)=>a-b);
+  const steps=[];
+  const stepByIndex=new Map();
+  members.forEach(i=>{
+    const label=timelineStepLabel(slides[i],E);
+    if(!label) return;
+    let pos=steps.indexOf(label);
+    if(pos<0){ pos=steps.length; steps.push(label); }
+    stepByIndex.set(i,pos);
+  });
+  if(!steps.length) return null;
+  const active=stepByIndex.has(index) ? stepByIndex.get(index) : 0;
+  return {steps,active,group};
+}
+
 function renderPartTimeline(index){
   const t=partTimelineFor(index);
   if(!t) return '';
-  const label=document.documentElement.lang==='en'?'Section progress':'Progression de la partie';
-  return `<div class="part-timeline footer-part-timeline" aria-label="${label}">${t.steps.map((step,j)=>`<span class="part-step${j===t.active?' active':''}">${step}</span>`).join('<i aria-hidden="true"></i>')}</div>`;
+  const label=document.documentElement.lang==='en'?'Progress within this section':'Progression dans cette partie';
+  const group=t.group ? `<span class="part-local-label">${esc(t.group)}</span><i aria-hidden="true"></i>` : '';
+  return `<div class="part-timeline footer-part-timeline local" aria-label="${label}">${group}${t.steps.map((step,j)=>`<span class="part-step${j===t.active?' active':''}">${esc(step)}</span>`).join('<i aria-hidden="true"></i>')}</div>`;
 }
 
 function studyAxisBadgeFor(s){
@@ -3899,5 +3932,50 @@ function studyAxisBadgeFor(s){
 <div class="apparatus-modal" id="apparatusModal" hidden aria-hidden="true"><div class="apparatus-backdrop" data-apparatus-close></div><section class="apparatus-panel" id="apparatusPanel" role="dialog" aria-modal="true" aria-labelledby="apparatusTitle" tabindex="-1"><button class="apparatus-close" type="button" data-apparatus-close aria-label="Fermer">×</button><span class="eyebrow" id="apparatusEyebrow">Appareillage</span><h2 id="apparatusTitle">Appareillage</h2><p class="apparatus-lead" id="apparatusLead"></p><div class="apparatus-grid" id="apparatusGrid"></div></section></div>
 \n<script id="apparatusPopupScript">\n(()=>{\n const modal=document.getElementById('apparatusModal'),panel=document.getElementById('apparatusPanel'),grid=document.getElementById('apparatusGrid'),title=document.getElementById('apparatusTitle'),lead=document.getElementById('apparatusLead'),eyebrow=document.getElementById('apparatusEyebrow');if(!modal)return;\n const studyColors={TWIXAV:'#0072B2',VIBEX:'#2f7d5a',SOFT:'#7652a8',VIBOLF:'#b44e6c',TWIXOLF:'#c36c32',FLUXOLF:'#a34d5d'};\n const equipment=[\n {keys:['psychopy'],name:'PsychoPy',img:'https://www.psychopy.org/_static/psychopyLogoType.png',fr:'Pilotage du paradigme, présentation des stimuli, réponses et horodatage des événements.',en:'Paradigm control, stimulus presentation, responses and event timestamps.'},\n {keys:['sniff-0','sniffo','sniff0','sniff-o'],name:'Sniff-0',img:'https://www.cynexo.com/wp-content/uploads/2018/09/sniff-O-foto1.jpg',fr:'Olfactomètre multicanal utilisé pour délivrer les odeurs et recevoir les commandes de stimulation.',en:'Multichannel olfactometer used to deliver odors and receive stimulation commands.'},\n {keys:['spir-0','spir0','spiro','spir-o'],name:'Spir-0',img:'https://www.cynexo.com/wp-content/uploads/2020/09/spir-O-foto2.jpg',fr:'Suivi du cycle respiratoire et détection du début de l’inspiration pour synchroniser la stimulation olfactive.',en:'Respiratory-cycle monitoring and inhalation-onset detection for olfactory synchronization.'},\n {keys:['biopac mp160','mp160','biopac'],name:'BIOPAC MP160',img:'https://upwards.com.tw/wp-content/uploads/2018/05/A01-Biopac-MP160-cover.jpg',fr:'Acquisition physiologique et gestion des marqueurs de synchronisation.',en:'Physiological acquisition and synchronization-marker management.'},\n {keys:['eeg biosemi','biosemi','eeg'],name:'EEG BioSemi',img:'https://www.biosemi.com/pics/module_active2_medium1.jpg',fr:'Système EEG utilisé pour l’acquisition électrophysiologique et les triggers expérimentaux.',en:'EEG system used for electrophysiological acquisition and experimental triggers.'},\n {keys:['écran','ecran','screen','display'],name:'Écran de stimulation',img:'',fr:'Présentation visuelle contrôlée avec un timing lié au taux de rafraîchissement mesuré.',en:'Controlled visual presentation with timing tied to the measured refresh rate.'},\n {keys:['audio','casque','sound','haut-parleur'],name:'Système audio',img:'',fr:'Présentation contrôlée des événements auditifs du paradigme.',en:'Controlled presentation of auditory events in the paradigm.'}\n ];\n const esc=s=>String(s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));\n function fallback(label){const t=esc(label).slice(0,25);return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="340" viewBox="0 0 600 340"><rect width="600" height="340" rx="28" fill="#f5f2ea"/><rect x="140" y="55" width="320" height="190" rx="24" fill="#fff" stroke="#6c7671" stroke-width="7"/><circle cx="225" cy="150" r="34" fill="none" stroke="#6c7671" stroke-width="7"/><path d="M285 125h110M285 155h110M285 185h72" stroke="#6c7671" stroke-width="9" stroke-linecap="round"/><text x="300" y="302" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" fill="#24302b">${t}</text></svg>`)}\n function info(raw){const k=raw.toLowerCase().trim();return equipment.find(e=>e.keys.some(x=>k.includes(x)))||{name:raw,img:'',fr:'Élément du dispositif expérimental utilisé dans cette étude.',en:'Component of the experimental setup used in this study.'}}\n function openApp(btn){const en=(btn.querySelector('b')?.textContent||'').trim().toLowerCase()==='equipment',study=btn.dataset.apparatusStudy||'',items=(btn.dataset.apparatusItems||'').split(/[·;]+/).map(x=>x.trim()).filter(Boolean);panel.style.setProperty('--apparatus',studyColors[study]||'var(--accent)');eyebrow.textContent=en?'Equipment':'Appareillage';title.textContent=`${study} - ${en?'Equipment':'Appareillage'}`;lead.textContent=en?'Devices and tools used in this experimental setup.':'Appareils et outils utilisés dans ce dispositif expérimental.';grid.innerHTML='';items.forEach(raw=>{const inf=info(raw),card=document.createElement('article'),src=inf.img||fallback(inf.name);card.className='apparatus-card';card.innerHTML=`<div class="apparatus-card-media"><img src="${esc(src)}" alt="${esc(inf.name)}" loading="lazy" referrerpolicy="no-referrer"></div><div class="apparatus-card-copy"><h3>${esc(inf.name)}</h3><p>${esc(en?inf.en:inf.fr)}</p></div>`;const im=card.querySelector('img');im.addEventListener('error',()=>{im.src=fallback(inf.name)},{once:true});grid.appendChild(card)});modal.hidden=false;modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';panel.focus()}\n function closeApp(){modal.hidden=true;modal.setAttribute('aria-hidden','true');document.body.style.overflow=''}\n document.addEventListener('click',e=>{const b=e.target.closest('.apparatus-open');if(b){e.preventDefault();e.stopPropagation();openApp(b);return}if(e.target.closest('[data-apparatus-close]'))closeApp()});document.addEventListener('keydown',e=>{if(modal.hidden)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeApp()}else if(['ArrowLeft','ArrowRight','PageUp','PageDown',' '].includes(e.key)){e.stopImmediatePropagation()}},true);\n})();\n</script>\n  <script src="assets/csi-export.js?v=1"></script>
   <script src="assets/csi-speaker-notes.js?v=1"></script>
+
+<script id="csi-vibex-manual-runtime">
+// CSI_VIBEX_MANUAL_RUNTIME
+(()=>{
+  const steps={
+    fr:[
+      {src:'assets/demo/image_S_16.jpg',label:'Image 1',alt:'VIBEX image 1 - cadrage serré'},
+      {src:'assets/demo/Masque_SCR.webp',label:'Masque',alt:'VIBEX - masque visuel'},
+      {src:'assets/demo/image_L_16.jpg',label:'Image 2',alt:'VIBEX image 2 - cadrage large'}
+    ],
+    en:[
+      {src:'assets/demo/image_S_16.jpg',label:'Image 1',alt:'VIBEX image 1 - close framing'},
+      {src:'assets/demo/Masque_SCR.webp',label:'Mask',alt:'VIBEX - visual mask'},
+      {src:'assets/demo/image_L_16.jpg',label:'Image 2',alt:'VIBEX image 2 - wide framing'}
+    ]
+  };
+  function setStep(box,n){
+    if(!box) return;
+    const lang=document.documentElement.lang==='en'?'en':'fr';
+    const list=steps[lang];
+    const idx=((Number(n)||0)%list.length+list.length)%list.length;
+    const item=list[idx];
+    box.dataset.vibStepCurrent=String(idx);
+    const img=box.querySelector('[data-vibex-manual-img]');
+    if(img){img.src=item.src;img.alt=item.alt;}
+    const label=box.querySelector('[data-vibex-manual-label]');
+    if(label) label.textContent=item.label;
+    box.querySelectorAll('[data-vib-step]').forEach(btn=>btn.classList.toggle('active',Number(btn.dataset.vibStep)===idx));
+  }
+  document.addEventListener('click',e=>{
+    const direct=e.target.closest('[data-vib-step]');
+    if(direct){
+      const box=direct.closest('[data-vibex-manual]');
+      if(box){e.preventDefault();e.stopPropagation();setStep(box,direct.dataset.vibStep);}
+      return;
+    }
+    const next=e.target.closest('[data-vibex-manual-next]');
+    if(next){
+      const box=next.closest('[data-vibex-manual]');
+      if(box){e.preventDefault();e.stopPropagation();setStep(box,Number(box.dataset.vibStepCurrent||0)+1);}
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
