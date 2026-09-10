@@ -1,0 +1,172 @@
+name: CSI save and reorder slides after 38
+
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-reorder-after38.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Save current CSI working version
+        run: |
+          cp index.html index_save.html
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save CSI before slide 39 deletion and reordering"
+            git push
+          fi
+          echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+
+      - name: Delete slide 39 and move slides 25 34 37 after slide 38
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          marker = 'const slides = ['
+          start = text.index(marker) + len(marker)
+
+          # Find the matching closing bracket for the slides array while respecting strings.
+          i = start
+          depth_sq = 1
+          in_str = None
+          esc = False
+          end = None
+          while i < len(text):
+              ch = text[i]
+              if in_str:
+                  if esc:
+                      esc = False
+                  elif ch == '\\':
+                      esc = True
+                  elif ch == in_str:
+                      in_str = None
+              else:
+                  if ch in ('"', "'", '`'):
+                      in_str = ch
+                  elif ch == '[':
+                      depth_sq += 1
+                  elif ch == ']':
+                      depth_sq -= 1
+                      if depth_sq == 0:
+                          end = i
+                          break
+              i += 1
+          if end is None:
+              raise RuntimeError('Could not locate end of slides array')
+
+          body = text[start:end]
+
+          # Extract top-level object literals from the array.
+          objs = []
+          i = 0
+          while i < len(body):
+              if body[i] != '{':
+                  i += 1
+                  continue
+              obj_start = i
+              depth = 0
+              in_str = None
+              esc = False
+              while i < len(body):
+                  ch = body[i]
+                  if in_str:
+                      if esc:
+                          esc = False
+                      elif ch == '\\':
+                          esc = True
+                      elif ch == in_str:
+                          in_str = None
+                  else:
+                      if ch in ('"', "'", '`'):
+                          in_str = ch
+                      elif ch == '{':
+                          depth += 1
+                      elif ch == '}':
+                          depth -= 1
+                          if depth == 0:
+                              objs.append(body[obj_start:i+1])
+                              i += 1
+                              break
+                  i += 1
+
+          if not objs:
+              raise RuntimeError('No slide objects parsed')
+
+          def is_appendix(obj):
+              return bool(re.search(r'\"appendix\"\s*:\s*true', obj))
+
+          def title_of(obj):
+              # Prefer the first flat title encountered for logging only.
+              m = re.search(r'\"title\"\s*:\s*\"([^\"]*)\"', obj)
+              return m.group(1) if m else '(sans titre)'
+
+          main = [o for o in objs if not is_appendix(o)]
+          appendix = [o for o in objs if is_appendix(o)]
+          if len(main) < 39:
+              raise RuntimeError(f'Only {len(main)} main slides found; need at least 39')
+
+          original = {n: main[n-1] for n in (25, 34, 37, 38, 39)}
+          print('Original targets:')
+          for n in (25, 34, 37, 38, 39):
+              print(f'  {n}: {title_of(original[n])}')
+
+          delete_obj = original[39]
+          moved = [original[25], original[34], original[37]]
+          anchor = original[38]
+
+          new_main = [o for o in main if o is not delete_obj and all(o is not m for m in moved)]
+          try:
+              anchor_idx = next(i for i,o in enumerate(new_main) if o is anchor)
+          except StopIteration:
+              raise RuntimeError('Slide 38 anchor was not found after removals')
+          new_main[anchor_idx+1:anchor_idx+1] = moved
+
+          # Sanity checks.
+          if len(new_main) != len(main) - 1:
+              raise RuntimeError('Main slide count did not decrease by exactly one')
+          a = next(i for i,o in enumerate(new_main) if o is anchor)
+          if new_main[a+1:a+4] != moved:
+              raise RuntimeError('Moved slides are not directly after original slide 38')
+
+          indent = '\n  '
+          rebuilt = indent + (',\n  '.join(new_main + appendix)) + '\n'
+          new_text = text[:start] + rebuilt + text[end:]
+          path.write_text(new_text, encoding='utf-8')
+
+          print(f'Main slides: {len(main)} -> {len(new_main)}')
+          print(f'Appendix slides unchanged: {len(appendix)}')
+          print(f'Deleted slide 39: {title_of(delete_obj)}')
+          print('Moved after original slide 38:')
+          for n, obj in zip((25,34,37), moved):
+              print(f'  original {n}: {title_of(obj)}')
+          print(f'Anchor original 38: {title_of(anchor)}')
+          PY
+
+      - name: Verify save stayed frozen
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+
+      - name: Commit working update and clean helper
+        run: |
+          git rm .github/workflows/csi-save-reorder-after38.yml
+          git add index.html
+          git commit -m "Delete slide 39 and move slides 25 34 37 after slide 38"
+          git push
