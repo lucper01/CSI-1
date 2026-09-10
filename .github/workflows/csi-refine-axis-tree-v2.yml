@@ -1,0 +1,56 @@
+name: CSI refine STOLF axis tree v2
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-refine-axis-tree-v2.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record save hash
+        run: echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Apply refined axis tree
+        run: python .github/scripts/csi_refine_axis_tree_v2.py
+      - name: Validate slide and JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+          text=Path('index.html').read_text(encoding='utf-8')
+          marker='const slides = '
+          pos=text.index(marker)+len(marker)
+          slides,_=json.JSONDecoder().raw_decode(text[pos:])
+          main=[s for s in slides if not s.get('appendix',False)]
+          s=main[34]
+          assert s.get('_fr',{}).get('title')=='STOLF - des axes aux études'
+          fr=s['_fr']['content']
+          assert 'Relations spatio-temporelles entre Olfaction, Vision, Audition' in fr
+          assert 'Influence des odeurs sur la perception spatio-temporelle en Audition et Vision' in fr
+          assert 'study-shell twixav faded' in fr and 'study-chip' in fr
+          assert 'study-shell solar focus' in fr and 'study-shell braud focus' in fr and 'study-shell braudolf focus' in fr
+          assert '.study-shell.faded .study-chip{opacity:.30}' in fr
+          assert 'background:var(--study)' in fr
+          scripts=re.findall(r'<script>(.*?)</script>',text,flags=re.S)
+          matches=[x for x in scripts if 'const slides = [' in x]
+          assert len(matches)==1
+          Path('/tmp/slides.js').write_text(matches[0],encoding='utf-8')
+          PY
+          node --check /tmp/slides.js
+      - name: Verify save untouched
+        run: test "$SAVE_SHA" = "$(git hash-object index_save.html)"
+      - name: Commit and clean helper files
+        run: |
+          rm .github/workflows/csi-refine-axis-tree-v2.yml
+          rm .github/scripts/csi_refine_axis_tree_v2.py
+          git add index.html .github/workflows/csi-refine-axis-tree-v2.yml .github/scripts/csi_refine_axis_tree_v2.py
+          git commit -m "Refine STOLF axis tree layout and labels"
+          git push origin main
