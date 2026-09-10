@@ -1,0 +1,46 @@
+name: CSI save then slide 2 Planification
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-then-slide2-planification.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Save working deck
+        run: |
+          cp index.html index_save.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_save.html
+          git diff --cached --quiet || git commit -m "Save CSI before slide 2 planning rename"
+          git push
+      - name: Rename part 6 on slide 2
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          fr = 'Rétroplanning global</h3>'
+          en = 'Global timeline</h3>'
+          if s.count(fr) != 2:
+              raise SystemExit(f'Expected 2 French slide-2 heading occurrences, found {s.count(fr)}')
+          if s.count(en) != 1:
+              raise SystemExit(f'Expected 1 English slide-2 heading occurrence, found {s.count(en)}')
+          s = s.replace(fr, 'Planification</h3>')
+          s = s.replace(en, 'Planning</h3>')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Verify save frozen after patch
+        run: git diff --exit-code HEAD -- index_save.html
+      - name: Commit working deck update and clean helper
+        run: |
+          git rm .github/workflows/csi-save-then-slide2-planification.yml
+          git add index.html
+          git commit -m "Rename slide 2 part 6 to Planification"
+          git push
