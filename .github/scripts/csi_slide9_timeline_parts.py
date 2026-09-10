@@ -49,7 +49,7 @@ function partTimelineFor(index){
   slides.forEach((s,i)=>{
     const localized=E?(s._en&&s._en.content):(s._fr&&s._fr.content);
     const source=String(localized||s.content||'');
-    const m=source.match(/section-divider-number[^>]*>(?:PARTIE|PART)\\s+([1-6])</i);
+    const m=source.match(/section-divider-number[^>]*>(?:PARTIE|PART)\\s+([1-6])/i);
     if(m) starts[Number(m[1])-1]=i;
   });
   let active=0;
