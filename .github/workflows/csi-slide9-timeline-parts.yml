@@ -1,5 +1,5 @@
 name: CSI slide 9 wording and part timeline
-# retry after hardening helper
+# retry after fixing divider matcher
 on:
   push:
     paths:
