@@ -1,0 +1,25 @@
+name: CSI fix retro complementary wording
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-fix-retro-complementary.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch wording
+        run: python .github/scripts/csi_fix_retro_complementary.py
+      - name: Commit changes
+        run: |
+          git config user.name "luc.perroquin"
+          git config user.email "luc.perroquin@gmail.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Harmonize complementary wording in retroplanning"
+            git push
+          fi
