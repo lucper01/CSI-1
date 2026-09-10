@@ -1,0 +1,44 @@
+name: CSI clean C shortcut label
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-clean-c-shortcut-label.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save hash
+        run: git hash-object index_save.html > /tmp/save_hash_before
+      - name: Remove obsolete shortcut label
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          t=p.read_text(encoding='utf-8')
+          old='N : notes · F : plein écran · C : personnalisation'
+          new='N : notes · F : plein écran'
+          if old not in t:
+              raise SystemExit('shortcut label not found')
+          t=t.replace(old,new,1)
+          if 'C : personnalisation' in t:
+              raise SystemExit('C shortcut label remains')
+          p.write_text(t,encoding='utf-8')
+          PY
+      - name: Verify protected save untouched
+        run: |
+          test "$(cat /tmp/save_hash_before)" = "$(git hash-object index_save.html)"
+          git diff --exit-code -- index_save.html
+      - name: Commit and clean workflow
+        run: |
+          git add index.html
+          git commit -m "Remove obsolete C shortcut label"
+          git rm .github/workflows/csi-clean-c-shortcut-label.yml
+          git commit -m "Remove temporary shortcut cleanup workflow"
+          git push
