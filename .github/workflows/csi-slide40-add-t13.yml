@@ -1,0 +1,86 @@
+name: CSI slide40 add T13
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-slide40-add-t13.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save
+        run: echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Add T13 to slide 40
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          pos = text.index(marker) + len(marker)
+          slides, consumed = json.JSONDecoder().raw_decode(text[pos:])
+          main = [s for s in slides if not s.get('appendix', False)]
+          if len(main) != 42:
+              raise RuntimeError(f'Expected 42 main slides, found {len(main)}')
+          target = main[39]
+          if target.get('title') != 'Planification - les trois années de thèse':
+              raise RuntimeError(f'Unexpected slide 40: {target.get("title")}')
+
+          def patch_content(c, lang='fr'):
+              c = c.replace('grid-template-columns:repeat(12,minmax(0,1fr))', 'grid-template-columns:repeat(13,minmax(0,1fr))')
+              c = c.replace('grid-column:9/span 4">Année 3', 'grid-column:9/span 5">Année 3')
+              c = c.replace('grid-column:9/span 4">Year 3', 'grid-column:9/span 5">Year 3')
+              if lang == 'fr':
+                  c = c.replace('<div class="q">T12</div></div></div>', '<div class="q">T12</div><div class="q">T13</div></div></div>')
+                  c = c.replace('grid-column:12;grid-row:3">Soutenance</div>', 'grid-column:13;grid-row:3">Soutenance</div>')
+              else:
+                  c = c.replace('<div class="q">Q12</div></div></div>', '<div class="q">Q12</div><div class="q">Q13</div></div></div>')
+                  c = c.replace('grid-column:12;grid-row:3">Defense</div>', 'grid-column:13;grid-row:3">Defense</div>')
+              return c
+
+          target['_fr']['content'] = patch_content(target['_fr']['content'], 'fr')
+          target['_en']['content'] = patch_content(target['_en']['content'], 'en')
+          target['content'] = patch_content(target['content'], 'fr')
+          target['_fr']['notes'] = target['_fr'].get('notes','').replace('soutenance T12', 'soutenance T13')
+          target['_en']['notes'] = target['_en'].get('notes','').replace('defense Q12', 'defense Q13')
+          target['notes'] = target['_fr']['notes']
+
+          new_array = json.dumps(slides, ensure_ascii=False, indent=2)
+          p.write_text(text[:pos] + new_array + text[pos+consumed:], encoding='utf-8')
+          PY
+      - name: Validate JavaScript and T13
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
+          target = [x for x in scripts if 'const slides = [' in x]
+          if len(target) != 1:
+              raise RuntimeError('slides script not found')
+          Path('/tmp/slides.js').write_text(target[0], encoding='utf-8')
+          for needle in ['>T13<','grid-column:9/span 5\\">Année 3','grid-column:13;grid-row:3\\">Soutenance','>Q13<','grid-column:13;grid-row:3\\">Defense']:
+              if needle not in s:
+                  raise RuntimeError(f'Missing expected content: {needle}')
+          PY
+          node --check /tmp/slides.js
+      - name: Verify save untouched
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+      - name: Commit update and remove helper
+        run: |
+          git rm .github/workflows/csi-slide40-add-t13.yml
+          git add index.html
+          git commit -m "Add T13 and move thesis defense"
+          git push
