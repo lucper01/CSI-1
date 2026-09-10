@@ -1,0 +1,43 @@
+name: CSI fix and move axis stages
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-fix-and-move-axis-stages.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save
+        run: echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Apply corrections and moves
+        run: python .github/scripts/csi_reorder_axes_stages.py
+      - name: Validate slide JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', text, flags=re.S)
+          matches = [x for x in scripts if 'const slides = [' in x]
+          assert len(matches) == 1
+          Path('/tmp/slides.js').write_text(matches[0], encoding='utf-8')
+          PY
+          node --check /tmp/slides.js
+      - name: Verify save untouched
+        run: test "$SAVE_SHA" = "$(git hash-object index_save.html)"
+      - name: Commit and clean helpers
+        run: |
+          rm .github/scripts/csi_reorder_axes_stages.py
+          rm .github/workflows/csi-fix-and-move-axis-stages.yml
+          git add index.html .github/scripts/csi_reorder_axes_stages.py .github/workflows/csi-fix-and-move-axis-stages.yml
+          git commit -m "Fix axis slide arrows opacity and placement"
+          git push origin main
