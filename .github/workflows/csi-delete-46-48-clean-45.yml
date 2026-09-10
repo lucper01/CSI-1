@@ -1,0 +1,24 @@
+name: Delete slides 46 and 48
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_delete_46_48_clean_45.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch deck
+        run: python .github/scripts/csi_delete_46_48_clean_45.py
+      - name: Verify save unchanged
+        run: git diff --exit-code -- index_save.html
+      - name: Commit deck update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Delete slides 46 and 48 and clean slide 45"
+          git push
