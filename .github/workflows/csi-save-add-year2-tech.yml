@@ -1,0 +1,25 @@
+name: CSI save and add year2 technical slide
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-add-year2-tech.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Save and patch deck
+        run: python .github/scripts/csi_save_add_year2_tech.py
+      - name: Commit changes
+        run: |
+          git config user.name "luc.perroquin"
+          git config user.email "luc.perroquin@gmail.com"
+          git add index.html index_save.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Save deck and add year 2 technical slide"
+            git push
+          fi
