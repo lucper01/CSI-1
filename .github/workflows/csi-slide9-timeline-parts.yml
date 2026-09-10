@@ -1,0 +1,49 @@
+name: CSI slide 9 wording and part timeline
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-slide9-timeline-parts.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Record protected save hash
+        run: echo "SAVE_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Apply slide 9 and timeline changes
+        run: python .github/scripts/csi_slide9_timeline_parts.py
+      - name: Validate presentation JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          text=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script>\s*const slides = \[', text)
+          if not m: raise SystemExit('slides script not found')
+          start=text.rfind('<script>',0,m.start())+len('<script>')
+          end=text.find('</script>',m.start())
+          js=text[start:end]
+          p=Path('/tmp/csi_slides_script.js'); p.write_text(js,encoding='utf-8')
+          subprocess.run(['node','--check',str(p)],check=True)
+          PY
+      - name: Verify protected save untouched
+        run: test "$(git hash-object index_save.html)" = "$SAVE_SHA"
+      - name: Commit working presentation
+        run: |
+          git add index.html
+          git commit -m "Update slide 9 wording and footer part timeline"
+          git push
+      - name: Remove temporary helpers
+        run: |
+          git pull --rebase
+          git rm .github/scripts/csi_slide9_timeline_parts.py .github/workflows/csi-slide9-timeline-parts.yml
+          git commit -m "Remove temporary slide 9 timeline helpers"
+          git push
