@@ -223,6 +223,41 @@
       color: var(--accent-strong);
     }
 
+    .laser-btn-dot {
+      display:block;
+      width:11px;
+      height:11px;
+      border-radius:50%;
+      background:#e00000;
+      box-shadow:0 0 0 2px rgba(224,0,0,.15);
+    }
+    #laserBtn.active {
+      background:rgba(224,0,0,.12);
+      color:#b00000;
+    }
+    #laserPointer {
+      position:fixed;
+      z-index:3000;
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:#e00000;
+      box-shadow:0 0 0 5px rgba(224,0,0,.16), 0 0 18px rgba(224,0,0,.72);
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+      opacity:0;
+      visibility:hidden;
+      transition:opacity .08s linear;
+    }
+    #laserPointer.visible {
+      opacity:1;
+      visibility:visible;
+    }
+    body.laser-enabled .slide,
+    body.laser-enabled .slide * {
+      cursor:none !important;
+    }
+
     .drawer, .navigator, .overview, .notes-panel {
       position: fixed;
       z-index: 1600;
@@ -2156,6 +2191,7 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
       <button class="icon-btn" id="navBtn" type="button" aria-label="Ouvrir le sommaire" title="Sommaire">☰</button>
       <button class="icon-btn" id="overviewBtn" type="button" aria-label="Vue d'ensemble" title="Vue d'ensemble">▦</button>
       <button class="icon-btn" id="notesBtn" type="button" aria-label="Notes orateur" title="Notes orateur">N</button>
+      <button class="icon-btn" id="laserBtn" type="button" aria-label="Activer le pointeur rouge" aria-pressed="false" title="Pointeur rouge (P)"><span class="laser-btn-dot" aria-hidden="true"></span></button>
       <button class="icon-btn" id="fullscreenBtn" type="button" aria-label="Plein écran" title="Plein écran">⛶</button>
       <button class="icon-btn" id="settingsBtn" type="button" aria-label="Personnalisation" title="Personnalisation">⚙</button>
     </div>
@@ -3744,6 +3780,40 @@ function studyAxisBadgeFor(s){
   document.getElementById('notesBtn').addEventListener('click',()=>{const p=document.getElementById('notesPanel');p.hidden=!p.hidden;updateUI();});
   document.getElementById('modeBtn').addEventListener('click',()=>setView(document.body.dataset.view==='slides'?'scroll':'slides'));
   document.getElementById('fullscreenBtn').addEventListener('click',async()=>{ try{ if(!document.fullscreenElement) await document.documentElement.requestFullscreen(); else await document.exitFullscreen(); }catch(e){showToast('Le plein écran n\'est pas disponible dans ce contexte.');} });
+  const laserBtn = document.getElementById('laserBtn');
+  const laserPointer = document.createElement('div');
+  laserPointer.id = 'laserPointer';
+  laserPointer.setAttribute('aria-hidden','true');
+  document.body.appendChild(laserPointer);
+  let laserEnabled = false;
+  function setLaserPointer(enabled){
+    laserEnabled = !!enabled;
+    document.body.classList.toggle('laser-enabled',laserEnabled);
+    laserBtn.classList.toggle('active',laserEnabled);
+    laserBtn.setAttribute('aria-pressed',laserEnabled?'true':'false');
+    laserBtn.setAttribute('aria-label',laserEnabled?'Désactiver le pointeur rouge':'Activer le pointeur rouge');
+    laserBtn.title = laserEnabled?'Désactiver le pointeur rouge (P)':'Pointeur rouge (P)';
+    if(!laserEnabled) laserPointer.classList.remove('visible');
+  }
+  laserBtn.addEventListener('click',()=>setLaserPointer(!laserEnabled));
+  document.addEventListener('pointermove',e=>{
+    if(!laserEnabled || e.pointerType==='touch'){
+      laserPointer.classList.remove('visible');
+      return;
+    }
+    const target = e.target instanceof Element ? e.target : null;
+    const slide = target?.closest('.slide');
+    if(!slide){
+      laserPointer.classList.remove('visible');
+      return;
+    }
+    laserPointer.style.left = `${e.clientX}px`;
+    laserPointer.style.top = `${e.clientY}px`;
+    laserPointer.classList.add('visible');
+  });
+  document.addEventListener('pointerleave',()=>laserPointer.classList.remove('visible'));
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) laserPointer.classList.remove('visible');});
+
   document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',()=>document.getElementById(btn.dataset.close).hidden=true));
   document.getElementById('prevBtn').addEventListener('click',()=>move(-1)); document.getElementById('nextBtn').addEventListener('click',()=>move(1));
   document.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.themeChoice)));
@@ -3763,6 +3833,7 @@ function studyAxisBadgeFor(s){
     if(k==='n'){const p=document.getElementById('notesPanel');p.hidden=!p.hidden;updateUI();}
     if(k==='c') togglePanel('settingsDrawer');
     if(k==='f') document.getElementById('fullscreenBtn').click();
+    if(k==='p'){e.preventDefault();setLaserPointer(!laserEnabled);}
     if(k==='escape'){['settingsDrawer','navigator','overview','notesPanel'].forEach(id=>document.getElementById(id).hidden=true);}
   });
 
