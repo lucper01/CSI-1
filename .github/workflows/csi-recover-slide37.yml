@@ -1,0 +1,79 @@
+name: CSI recover and reapply slide 37
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-recover-slide37.yml'
+permissions:
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Restore last stable save
+        run: cp index_save.html index.html
+      - name: Reapply slide 37 changes safely
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          reps = [
+            (r'<article><b>58 h eq. TD</b><h3>Enseignement</h3>',
+             r'<article><b>58 h eq. TD - 29 h valorisées</b><h3>Enseignement</h3>'),
+            (r'<article><b>60,5 h</b><h3>Formation doctorale</h3><p>29 h déjà prévues et 31,5 h planifiées pour 2026-2027, portant notamment sur l’éthique, la qualité en recherche, l’environnement académique, la publication et la gestion des données.</p><small>Projection cumulée : 120,5 h de formation doctorale.</small></article>',
+             r'<article><b>31.5 h</b><h3>Formation doctorale</h3><p>Éthique - qualité en recherche - environnement académique - publication scientifique - gestion des données.</p></article>'),
+            (r'<article><b>1 M1</b><h3>Encadrement</h3><p>Un seul encadrement de mémoire de Master 1 est prévu pendant l’année 2026-2027, en articulation avec les travaux de thèse.</p></article>',
+             r'<article><b>1 M1</b><h3>Encadrement</h3><p>Encadrement d’un mémoire de Master 1 sur la manipulation VIBOLF.</p><div class=\"v16-tool-pills\"><span>VIBOLF</span></div></article>'),
+            (r'<article><b>58 tutorial-equivalent h</b><h3>Teaching</h3>',
+             r'<article><b>58 tutorial-equivalent h - 29 h credited</b><h3>Teaching</h3>'),
+            (r'<article><b>60.5 h</b><h3>Doctoral training</h3><p>29 h already planned plus 31.5 h scheduled for 2026-2027, including research ethics, quality in research, the academic environment, scientific publishing and research-data management.</p><small>Projected cumulative total: 120.5 h of doctoral training.</small></article>',
+             r'<article><b>31.5 h</b><h3>Doctoral training</h3><p>Research ethics - quality in research - academic environment - scientific publishing - research-data management.</p></article>'),
+            (r'<article><b>1 M1</b><h3>Supervision</h3><p>Only one Master 1 thesis supervision is planned during 2026-2027, linked to the PhD research programme.</p></article>',
+             r'<article><b>1 M1</b><h3>Supervision</h3><p>Supervision of one Master 1 thesis on the VIBOLF experiment.</p><div class=\"v16-tool-pills\"><span>VIBOLF</span></div></article>'),
+          ]
+
+          expected = [2,2,2,1,1,1]
+          for (old,new), n in zip(reps, expected):
+              c = s.count(old)
+              if c != n:
+                  raise RuntimeError(f'Expected {n} occurrences, found {c}: {old[:100]}')
+              s = s.replace(old,new)
+
+          # Update speaker notes without risking structural HTML changes.
+          s = s.replace('Présenter les volumes prévisionnels : 58 h eq. TD d’enseignement, 60,5 h de formation doctorale et un seul encadrement M1.',
+                        'Présenter les volumes prévisionnels : 58 h eq. TD - 29 h valorisées, 31.5 h de formation doctorale et un mémoire M1 sur VIBOLF.')
+          s = s.replace('Present the planned volumes: 58 tutorial-equivalent teaching hours, 60.5 h of doctoral training and one Master 1 supervision.',
+                        'Present the planned volumes: 58 tutorial-equivalent teaching hours - 29 h credited, 31.5 h of doctoral training and one Master 1 thesis on VIBOLF.')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Validate embedded JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
+          if not scripts:
+              raise RuntimeError('No script tags found')
+          for i, code in enumerate(scripts):
+              Path(f'/tmp/script_{i}.js').write_text(code, encoding='utf-8')
+          print(f'Extracted {len(scripts)} scripts')
+          PY
+          for f in /tmp/script_*.js; do node --check "$f"; done
+      - name: Verify save remains untouched
+        run: git diff --exit-code -- index_save.html
+      - name: Commit recovery
+        run: |
+          git rm .github/workflows/csi-recover-slide37.yml
+          git add index.html
+          git commit -m "Recover CSI and safely reapply slide 37 changes"
+          git push
