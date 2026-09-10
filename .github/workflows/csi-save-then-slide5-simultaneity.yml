@@ -1,0 +1,28 @@
+name: CSI save then slide 5 simultaneity only
+on:
+  push:
+    paths:
+      - '.github/scripts/csi_slide5_simultaneity_only.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Save working deck
+        run: |
+          cp index.html index_save.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index_save.html
+          git diff --cached --quiet || git commit -m "Save CSI before slide 5 simultaneity edit"
+      - name: Patch slide 5
+        run: python .github/scripts/csi_slide5_simultaneity_only.py
+      - name: Verify save frozen after patch
+        run: git diff --exit-code -- index_save.html
+      - name: Commit working deck update
+        run: |
+          git add index.html
+          git diff --cached --quiet || git commit -m "Remove order from slide 5 simultaneity card"
+          git push
