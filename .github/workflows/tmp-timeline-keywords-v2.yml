@@ -19,14 +19,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Save current CSI state first
+      - name: Keep previously completed save frozen
         run: |
-          cp index.html index_save.html
           SAVED_SHA=$(git hash-object index_save.html)
           echo "SAVED_SHA=$SAVED_SHA" >> "$GITHUB_ENV"
-          git add index_save.html
-          git commit -m "Save current CSI state before timeline keyword refinement"
-          git push
       - name: Refine local timeline labels
         run: python tools/tmp_timeline_keywords_v2.py
       - name: Validate JavaScript syntax
