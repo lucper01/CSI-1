@@ -1,0 +1,137 @@
+name: CSI save and refine quarterly planning
+
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-save-fix-quarterly-planning.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Save current working version
+        run: |
+          cp index.html index_save.html
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save CSI before refining quarterly planning"
+            git push
+          fi
+          echo "SAVE_BLOB=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+
+      - name: Refine current main slide 40
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = 'const slides = '
+          pos = text.index(marker) + len(marker)
+          slides, consumed = json.JSONDecoder().raw_decode(text[pos:])
+
+          main = [s for s in slides if not s.get('appendix', False)]
+          if len(main) != 42:
+              raise RuntimeError(f'Expected 42 main slides, found {len(main)}')
+          target = main[39]
+          if target.get('title') != 'Planification - les trois années de thèse':
+              raise RuntimeError(f'Unexpected slide 40: {target.get("title")}')
+
+          style = '''<style>
+          .csi-plan12{font-size:.66rem}
+          .csi-plan12 .ph{display:grid;grid-template-columns:132px 1fr;gap:6px;margin-bottom:5px}
+          .csi-plan12 .years,.csi-plan12 .quarters{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+          .csi-plan12 .year{padding:6px 5px;border-radius:11px;text-align:center;font-weight:950;letter-spacing:.055em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent-strong);border:1px solid var(--line)}
+          .csi-plan12 .q{position:relative;padding:5px 2px;border-radius:9px;text-align:center;font-weight:900;background:var(--white);border:1px solid var(--line);color:var(--muted);min-height:31px}
+          .csi-plan12 .q.now{background:color-mix(in srgb,var(--accent) 12%,var(--white));color:var(--accent-strong);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+          .csi-plan12 .here{display:block;font-size:.54rem;line-height:1.05;margin-top:2px;color:var(--accent);font-weight:950;white-space:normal}
+          .csi-plan12 .lane{display:grid;grid-template-columns:132px 1fr;gap:6px;margin-top:6px}
+          .csi-plan12 .lab{display:flex;align-items:center;padding:8px 10px;border-radius:13px;background:var(--accent-pale);border:1px solid var(--line);font-weight:950;color:var(--accent-strong)}
+          .csi-plan12 .track{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(3,minmax(30px,auto));gap:4px;min-width:0}
+          .csi-plan12 .evt{display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 5px;border-radius:10px;background:var(--white);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 7%,transparent);font-weight:850;line-height:1.12;white-space:normal;overflow-wrap:anywhere;min-width:0}
+          .csi-plan12 .evt.soft{background:color-mix(in srgb,var(--accent) 8%,var(--white))}
+          .csi-plan12 .evt.dark{background:var(--accent-strong);color:#fff;border-color:transparent}
+          .csi-plan12 .evt.muted{opacity:.76;border-style:dashed}
+          .csi-plan12 .commbox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;align-content:center;padding:4px 5px}
+          .csi-plan12 .chip{display:grid;place-items:center;min-height:24px;padding:3px 4px;border-radius:8px;background:var(--white);border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));font-weight:850;line-height:1.05;text-align:center}
+          .csi-plan12 .chip small{display:block;font-size:.52rem;color:var(--muted);font-weight:750;margin-top:2px}
+          .csi-plan12 .legend{margin-top:7px;text-align:right;color:var(--muted);font-size:.62rem}
+          </style>'''
+
+          fr_content = style + '''<div class="csi-plan12">
+          <div class="ph"><div></div><div class="years"><div class="year" style="grid-column:1/span 4">Année 1</div><div class="year" style="grid-column:5/span 4">Année 2</div><div class="year" style="grid-column:9/span 4">Année 3</div></div></div>
+          <div class="ph"><div></div><div class="quarters"><div class="q">T1</div><div class="q">T2</div><div class="q">T3</div><div class="q now">T4<span class="here">📍 VOUS ÊTES ICI</span></div><div class="q">T1</div><div class="q">T2</div><div class="q">T3</div><div class="q">T4</div><div class="q">T1</div><div class="q">T2</div><div class="q">T3</div><div class="q">T4</div></div></div>
+          <div class="lane"><div class="lab">Études</div><div class="track"><div class="evt soft" style="grid-column:1/span 3;grid-row:1">TWIXAV</div><div class="evt soft" style="grid-column:2/span 3;grid-row:2">VIBEX</div><div class="evt" style="grid-column:5/span 3;grid-row:1">SOFT<br>collecte - analyses</div><div class="evt" style="grid-column:6/span 2;grid-row:2">VIBOLF</div><div class="evt" style="grid-column:8/span 3;grid-row:2">TWIXOLF</div><div class="evt muted" style="grid-column:9/span 2;grid-row:3">SOLAR<br>BRAUD - BRAUDOLF</div><div class="evt" style="grid-column:11/span 2;grid-row:1">Analyses<br>finales</div></div></div>
+          <div class="lane"><div class="lab">Publications</div><div class="track"><div class="evt soft" style="grid-column:1/span 4;grid-row:1">Revue - protocoles<br>pipelines</div><div class="evt" style="grid-column:5/span 3;grid-row:1">TWIXAV<br>manuscrit</div><div class="evt" style="grid-column:5/span 3;grid-row:2">VIBEX<br>manuscrit</div><div class="evt" style="grid-column:7/span 3;grid-row:3">SOFT<br>rédaction</div><div class="evt" style="grid-column:9/span 4;grid-row:2">VIBOLF - TWIXOLF<br>rédaction</div><div class="evt" style="grid-column:10/span 3;grid-row:1">Soumissions<br>révisions</div></div></div>
+          <div class="lane"><div class="lab">Thèse</div><div class="track"><div class="evt dark" style="grid-column:1/span 4;grid-row:1">Cadrage<br>état de l’art</div><div class="evt dark" style="grid-column:2/span 3;grid-row:2">CER - DPD<br>protocoles</div><div class="evt dark" style="grid-column:5/span 5;grid-row:1">Collectes - analyses<br>intégration</div><div class="evt dark" style="grid-column:9/span 4;grid-row:2">Rédaction<br>de thèse</div><div class="evt dark" style="grid-column:12;grid-row:1">Soumission<br>oct. 2028</div><div class="evt dark" style="grid-column:12;grid-row:3">Soutenance<br>déc. 2028</div></div></div>
+          <div class="lane"><div class="lab">Communications</div><div class="track"><div class="evt soft" style="grid-column:3/span 2;grid-row:1">JDD 2026<br>prix originalité</div><div class="evt soft" style="grid-column:4;grid-row:2">Nuit des chercheurs<br>2026</div><div class="evt commbox muted" style="grid-column:5/span 4;grid-row:1/span 3"><span class="chip">FJC 2027<small>trimestre à préciser</small></span><span class="chip">JDD 2027<small>trimestre à préciser</small></span><span class="chip">ECRO 2027<small>trimestre à préciser</small></span><span class="chip">GDRO3 2027<small>trimestre à préciser</small></span><span class="chip" style="grid-column:1/span 2">Expérimentarium 2027<small>trimestre à préciser</small></span></div><div class="evt commbox muted" style="grid-column:9/span 4;grid-row:1/span 3"><span class="chip">FJC 2028<small>trimestre à préciser</small></span><span class="chip">JDD 2028<small>trimestre à préciser</small></span><span class="chip" style="grid-column:1/span 2">ISOT 2028<small>si financement - trimestre à préciser</small></span></div></div></div>
+          <div class="legend">Jusqu’à 3 lignes par catégorie. Les événements sans date trimestrielle confirmée restent séparés et explicitement à préciser.</div>
+          </div>'''
+
+          en_content = style + '''<div class="csi-plan12">
+          <div class="ph"><div></div><div class="years"><div class="year" style="grid-column:1/span 4">Year 1</div><div class="year" style="grid-column:5/span 4">Year 2</div><div class="year" style="grid-column:9/span 4">Year 3</div></div></div>
+          <div class="ph"><div></div><div class="quarters"><div class="q">Q1</div><div class="q">Q2</div><div class="q">Q3</div><div class="q now">Q4<span class="here">📍 YOU ARE HERE</span></div><div class="q">Q1</div><div class="q">Q2</div><div class="q">Q3</div><div class="q">Q4</div><div class="q">Q1</div><div class="q">Q2</div><div class="q">Q3</div><div class="q">Q4</div></div></div>
+          <div class="lane"><div class="lab">Studies</div><div class="track"><div class="evt soft" style="grid-column:1/span 3;grid-row:1">TWIXAV</div><div class="evt soft" style="grid-column:2/span 3;grid-row:2">VIBEX</div><div class="evt" style="grid-column:5/span 3;grid-row:1">SOFT<br>collection - analyses</div><div class="evt" style="grid-column:6/span 2;grid-row:2">VIBOLF</div><div class="evt" style="grid-column:8/span 3;grid-row:2">TWIXOLF</div><div class="evt muted" style="grid-column:9/span 2;grid-row:3">SOLAR<br>BRAUD - BRAUDOLF</div><div class="evt" style="grid-column:11/span 2;grid-row:1">Final<br>analyses</div></div></div>
+          <div class="lane"><div class="lab">Publications</div><div class="track"><div class="evt soft" style="grid-column:1/span 4;grid-row:1">Review - protocols<br>pipelines</div><div class="evt" style="grid-column:5/span 3;grid-row:1">TWIXAV<br>manuscript</div><div class="evt" style="grid-column:5/span 3;grid-row:2">VIBEX<br>manuscript</div><div class="evt" style="grid-column:7/span 3;grid-row:3">SOFT<br>writing</div><div class="evt" style="grid-column:9/span 4;grid-row:2">VIBOLF - TWIXOLF<br>writing</div><div class="evt" style="grid-column:10/span 3;grid-row:1">Submissions<br>revisions</div></div></div>
+          <div class="lane"><div class="lab">Thesis</div><div class="track"><div class="evt dark" style="grid-column:1/span 4;grid-row:1">Framing<br>literature review</div><div class="evt dark" style="grid-column:2/span 3;grid-row:2">Ethics - data protection<br>protocols</div><div class="evt dark" style="grid-column:5/span 5;grid-row:1">Collections - analyses<br>integration</div><div class="evt dark" style="grid-column:9/span 4;grid-row:2">Thesis<br>writing</div><div class="evt dark" style="grid-column:12;grid-row:1">Submission<br>Oct. 2028</div><div class="evt dark" style="grid-column:12;grid-row:3">Defense<br>Dec. 2028</div></div></div>
+          <div class="lane"><div class="lab">Communications</div><div class="track"><div class="evt soft" style="grid-column:3/span 2;grid-row:1">JDD 2026<br>originality award</div><div class="evt soft" style="grid-column:4;grid-row:2">Researchers’ Night<br>2026</div><div class="evt commbox muted" style="grid-column:5/span 4;grid-row:1/span 3"><span class="chip">FJC 2027<small>quarter to confirm</small></span><span class="chip">JDD 2027<small>quarter to confirm</small></span><span class="chip">ECRO 2027<small>quarter to confirm</small></span><span class="chip">GDRO3 2027<small>quarter to confirm</small></span><span class="chip" style="grid-column:1/span 2">Experimentarium 2027<small>quarter to confirm</small></span></div><div class="evt commbox muted" style="grid-column:9/span 4;grid-row:1/span 3"><span class="chip">FJC 2028<small>quarter to confirm</small></span><span class="chip">JDD 2028<small>quarter to confirm</small></span><span class="chip" style="grid-column:1/span 2">ISOT 2028<small>if funded - quarter to confirm</small></span></div></div></div>
+          <div class="legend">Up to 3 rows per category. Events without a confirmed quarter remain separate and explicitly marked as to be scheduled.</div>
+          </div>'''
+
+          target['_fr']['content'] = fr_content
+          target['_en']['content'] = en_content
+          target['content'] = fr_content
+          target['_fr']['lead'] = 'Douze trimestres pour visualiser les activités réalisées, en cours et prévues, sans superposition artificielle des événements.'
+          target['_en']['lead'] = 'Twelve quarters to visualize completed, ongoing and planned activities without artificially overlapping events.'
+          target['lead'] = target['_fr']['lead']
+          target['_fr']['notes'] = 'Les lignes supplémentaires servent uniquement à éviter les chevauchements. Pour 2027 et 2028, ne pas attribuer de trimestre aux communications tant que la date n’est pas confirmée.'
+          target['_en']['notes'] = 'Additional rows are used only to prevent overlaps. Do not assign 2027 or 2028 communications to a quarter until the date is confirmed.'
+          target['notes'] = target['_fr']['notes']
+
+          new_array = json.dumps(slides, ensure_ascii=False, indent=2)
+          out = text[:pos] + new_array + text[pos+consumed:]
+          p.write_text(out, encoding='utf-8')
+          print('Refined slide 40 with three-row tracks and separated undated communications')
+          PY
+
+      - name: Validate presentation JavaScript and slide 40
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', s, flags=re.S|re.I)
+          target = [x for x in scripts if 'const slides = [' in x]
+          if len(target) != 1:
+              raise RuntimeError(f'Expected one slides script, found {len(target)}')
+          Path('/tmp/slides.js').write_text(target[0], encoding='utf-8')
+          for needle in ['trimestre à préciser','grid-template-rows:repeat(3','GDRO3 2027','Expérimentarium 2027']:
+              if needle not in s:
+                  raise RuntimeError(f'Missing expected content: {needle}')
+          PY
+          node --check /tmp/slides.js
+
+      - name: Verify protected save unchanged after edit
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVE_BLOB"
+          git diff --exit-code -- index_save.html
+
+      - name: Commit working update and remove helper
+        run: |
+          git rm .github/workflows/csi-save-fix-quarterly-planning.yml
+          git add index.html
+          git commit -m "Refine three-year quarterly planning layout"
+          git push
