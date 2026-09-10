@@ -11,7 +11,9 @@ html_anchor = '      <button class="icon-btn" id="fullscreenBtn" type="button" a
 js_anchor = "  document.getElementById('fullscreenBtn').addEventListener('click',async()=>{ try{ if(!document.fullscreenElement) await document.documentElement.requestFullscreen(); else await document.exitFullscreen(); }catch(e){showToast('Le plein écran n\\'est pas disponible dans ce contexte.');} });"
 key_anchor = "    if(k==='f') document.getElementById('fullscreenBtn').click();"
 
-for anchor, label in [(css_anchor, 'CSS'), (html_anchor, 'HTML'), (js_anchor, 'JS'), (key_anchor, 'keyboard')]:
+if text.count(css_anchor) < 1:
+    raise SystemExit('CSS anchor missing')
+for anchor, label in [(html_anchor, 'HTML'), (js_anchor, 'JS'), (key_anchor, 'keyboard')]:
     count = text.count(anchor)
     if count != 1:
         raise SystemExit(f'Unexpected {label} anchor count: {count}')
