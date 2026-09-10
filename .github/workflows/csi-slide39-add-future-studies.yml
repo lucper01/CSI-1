@@ -39,11 +39,10 @@ jobs:
           insert = '<div class="evt" style="grid-column:9;grid-row:3">TWIXOLF<br>analyses</div><div class="evt muted" style="grid-column:8/span 3;grid-row:1">SOLAR, BRAUD,<br>BRAUDOLF ?</div></div></div><div class="lane"><div class="lab">Publications</div>'
 
           for key in ('_fr', '_en'):
-              block = target[key]
-              content = block['content']
+              content = target[key]['content']
               assert 'SOLAR, BRAUD,<br>BRAUDOLF ?' not in content
               assert needle in content
-              block['content'] = content.replace(needle, insert, 1)
+              target[key]['content'] = content.replace(needle, insert, 1)
 
           content = target['content']
           assert 'SOLAR, BRAUD,<br>BRAUDOLF ?' not in content
@@ -57,21 +56,28 @@ jobs:
           target['notes'] = target.get('notes', '') + fr_note
 
           new_array = json.dumps(slides, ensure_ascii=False, indent=2)
-          out = text[:pos] + new_array + text[pos+consumed:]
-          p.write_text(out, encoding='utf-8')
+          p.write_text(text[:pos] + new_array + text[pos+consumed:], encoding='utf-8')
           PY
       - name: Validate main slides JavaScript and requested change
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
+          import json, re
           text = Path('index.html').read_text(encoding='utf-8')
+          marker = 'const slides = '
+          pos = text.index(marker) + len(marker)
+          slides, _ = json.JSONDecoder().raw_decode(text[pos:])
+          main = [s for s in slides if not s.get('appendix', False)]
+          target = main[38]
+          assert target['_fr']['content'].count('SOLAR, BRAUD,<br>BRAUDOLF ?') == 1
+          assert target['_en']['content'].count('SOLAR, BRAUD,<br>BRAUDOLF ?') == 1
+          assert target['content'].count('SOLAR, BRAUD,<br>BRAUDOLF ?') == 1
+          for block in (target['_fr'], target['_en'], target):
+              assert 'grid-column:8/span 3;grid-row:1' in block['content']
           scripts = re.findall(r'<script>(.*?)</script>', text, flags=re.S)
           matches = [s for s in scripts if 'const slides = [' in s]
           assert len(matches) == 1
           Path('/tmp/slides.js').write_text(matches[0], encoding='utf-8')
-          assert text.count('SOLAR, BRAUD,<br>BRAUDOLF ?') == 3
-          assert 'grid-column:8/span 3;grid-row:1">SOLAR, BRAUD,<br>BRAUDOLF ?' in text
           PY
           node --check /tmp/slides.js
       - name: Verify save untouched
