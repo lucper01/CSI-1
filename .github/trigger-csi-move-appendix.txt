@@ -1,1 +1,1 @@
-trigger 2026-09-10 retry 2
+trigger 2026-09-10 slide 38
