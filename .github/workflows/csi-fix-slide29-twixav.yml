@@ -1,0 +1,28 @@
+name: Fix slide 29 TWIXAV
+on:
+  push:
+    paths:
+      - '.github/workflows/csi-fix-slide29-twixav.yml'
+      - '.github/scripts/csi_fix_slide29_twixav.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch index
+        run: python .github/scripts/csi_fix_slide29_twixav.py
+      - name: Commit changes
+        run: |
+          git config user.name "luc.perroquin"
+          git config user.email "luc.perroquin@gmail.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Fix slide 29 to TWIXAV and VIBEX"
+            git push
+          fi
