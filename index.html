@@ -2218,7 +2218,7 @@ body.reduced-motion .study-demo-launch,body.reduced-motion .demo-progress>i{tran
   <main id="deck" class="deck" tabindex="-1"></main>
 
   <div class="timer-badge" title="Chronomètre de présentation"><span id="timerText">00:00</span><button id="timerBtn" type="button" aria-label="Démarrer ou mettre en pause le chronomètre">▶</button><button id="timerReset" type="button" aria-label="Réinitialiser le chronomètre">↺</button></div>
-  <div class="deck-footer" aria-live="polite"><span id="footerTimeline" class="footer-timeline-slot"></span><span class="footer-divider" aria-hidden="true"></span><span id="slideCounter" class="slide-counter">1 / 32</span></div>
+  <div class="deck-footer" aria-live="polite"><span id="footerTimeline" class="footer-timeline-slot"></span><span class="footer-divider" aria-hidden="true"></span><span id="slideCounter" class="slide-counter">1</span></div>
   <div class="nav-arrows" aria-label="Navigation"><button id="prevBtn" type="button" aria-label="Slide précédente">←</button><button id="nextBtn" type="button" aria-label="Slide suivante">→</button></div>
   <div class="footer-progress" aria-hidden="true"><div id="progressBar"></div></div>
   <div class="toast" id="toast"></div>
@@ -3868,7 +3868,7 @@ function studyAxisBadgeFor(s){
 
   function updateUI(){
     const vis=visibleIndexes(); const pos=Math.max(0,vis.indexOf(current));
-    document.getElementById('slideCounter').textContent=`${pos+1} / ${vis.length}`;
+    document.getElementById('slideCounter').textContent=`${pos+1}`;
     document.getElementById('footerTimeline').innerHTML=renderPartTimeline(current);
     document.getElementById('progressBar').style.width=`${((pos+1)/vis.length)*100}%`;
     document.getElementById('notesBody').innerHTML=`<strong>${slides[current].title}</strong><br><br>${slides[current].notes||'Aucune note spécifique.'}`;
