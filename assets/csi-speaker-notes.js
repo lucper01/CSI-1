@@ -69,11 +69,42 @@
     return points;
   }
 
+  // CSI_THEORY_NOTES_STRUCTURE_V2
+  // Keep the original speaker-note organisation even when theoretical card descriptions
+  // have been removed from the slide and stored in slide.notes.
+  function splitStructuredNotes(note) {
+    const raw = String(note ?? '');
+    if (!raw.trim()) return { script: [], cardDetails: [] };
+
+    const markers = [
+      'Détails des cartes conservés pour les notes orateur :',
+      'Card details kept for speaker notes:'
+    ];
+    let markerIndex = -1;
+    let markerText = '';
+    for (const candidate of markers) {
+      const idx = raw.indexOf(candidate);
+      if (idx >= 0 && (markerIndex < 0 || idx < markerIndex)) {
+        markerIndex = idx;
+        markerText = candidate;
+      }
+    }
+
+    const scriptRaw = markerIndex >= 0 ? raw.slice(0, markerIndex).trim() : raw.trim();
+    const detailsRaw = markerIndex >= 0 ? raw.slice(markerIndex + markerText.length).trim() : '';
+
+    const script = scriptRaw
+      ? scriptRaw.split(/\n{2,}|\n(?=[A-ZÀ-ÖØ-Ý0-9])/).map(clean).filter(Boolean)
+      : [];
+    const cardDetails = detailsRaw
+      ? detailsRaw.split(/\n+/).map(line => clean(line.replace(/^[-•]\s*/, ''))).filter(Boolean)
+      : [];
+
+    return { script, cardDetails };
+  }
+
   function noteParagraphs(note) {
-    const text = clean(note);
-    if (!text) return [];
-    const parts = String(note).split(/\n{2,}|\n(?=[A-ZÀ-ÖØ-Ý0-9])/).map(clean).filter(Boolean);
-    return parts.length ? parts : [text];
+    return splitStructuredNotes(note).script;
   }
 
   function palette() {
@@ -101,8 +132,11 @@
     const state = visibleState(index);
     const title = clean(slide.title) || (isEnglish() ? 'Untitled slide' : 'Diapositive sans titre');
     const lead = clean(slide.lead);
-    const notes = noteParagraphs(slide.notes);
-    const points = collectTalkingPoints(index, title, lead);
+    const structuredNotes = splitStructuredNotes(slide.notes);
+    const notes = structuredNotes.script;
+    const points = [...structuredNotes.cardDetails, ...collectTalkingPoints(index, title, lead)]
+      .filter((text, i, arr) => text && arr.indexOf(text) === i)
+      .slice(0, 10);
     const nextSlide = state.next !== null ? list[state.next] : null;
     const previousSlide = state.previous !== null ? list[state.previous] : null;
     const nextTitle = clean(nextSlide?.title);
