@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const MARK = 'csi-source-visuals-v1';
+  const MARK = 'csi-source-visuals-v2';
   if (window[MARK]) return;
   window[MARK] = true;
 
@@ -9,8 +9,7 @@
     ear: {src:'https://upload.wikimedia.org/wikipedia/commons/2/29/Gray907.png', fr:'Coupe anatomique de l’oreille humaine', en:'Anatomical cross-section of the human ear', source:'Gray’s Anatomy - domaine public'},
     nose: {src:'https://upload.wikimedia.org/wikipedia/commons/6/66/Nose_and_nasal_cavities.png', fr:'Nez et cavités nasales', en:'Nose and nasal cavities', source:'NCI/SEER - domaine public'},
     lecture: {src:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Ohio_University_Lecture_Hall.jpg/1280px-Ohio_University_Lecture_Hall.jpg', fr:'Amphithéâtre universitaire', en:'University lecture hall', source:'Garden Sprite - CC0'},
-    microphone: {src:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/FEMA_-_39463_-_Microphones_at_the_podium.jpg/960px-FEMA_-_39463_-_Microphones_at_the_podium.jpg', fr:'Microphones de conférence', en:'Conference microphones', source:'Bill Koplitz/FEMA - domaine public'},
-    landscape: {src:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Lake_Mountain_Landscape.jpg/1280px-Lake_Mountain_Landscape.jpg', fr:'Paysage naturel', en:'Natural landscape', source:'Bonnie Moreland - CC0'}
+    microphone: {src:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/FEMA_-_39463_-_Microphones_at_the_podium.jpg/960px-FEMA_-_39463_-_Microphones_at_the_podium.jpg', fr:'Microphones de conférence', en:'Conference microphones', source:'Bill Koplitz/FEMA - domaine public'}
   };
 
   const style = document.createElement('style');
@@ -56,6 +55,16 @@
     img.decoding = 'async';
     fig.appendChild(img);
     slideEl.appendChild(fig);
+  }
+
+  function purgeLegacyStudyLandscape(slideEl) {
+    if (!slideEl) return;
+    const index = Number(slideEl.dataset.index);
+    if (!Number.isInteger(index)) return;
+    const study = norm(metaFor(index).study);
+    if (study === 'vibex' || study === 'vibolf') {
+      slideEl.querySelectorAll('.csi-source-visual[data-asset=\"landscape\"], .csi-source-visual[data-slot=\"vibex\"], .csi-source-visual[data-slot=\"vibolf-landscape\"]').forEach(node => node.remove());
+    }
   }
 
   function decorate(slideEl) {
@@ -105,7 +114,7 @@
     slideEl.dataset.sourceVisualsDone = '1';
   }
 
-  function refresh() { document.querySelectorAll('#deck .slide[data-index]').forEach(decorate); }
+  function refresh() { document.querySelectorAll('#deck .slide[data-index]').forEach(slideEl => { purgeLegacyStudyLandscape(slideEl); decorate(slideEl); }); }
   refresh();
   const deck = document.getElementById('deck');
   if (deck) new MutationObserver(refresh).observe(deck, {subtree:true, childList:true});
