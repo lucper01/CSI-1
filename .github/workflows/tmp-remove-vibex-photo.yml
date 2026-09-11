@@ -1,0 +1,36 @@
+name: CSI remove VIBEX photo
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-remove-vibex-photo.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Freeze protected save hash
+        run: git hash-object index_save.html > /tmp/save_hash_before
+      - name: Remove VIBEX photo
+        run: python .github/scripts/tmp_remove_vibex_photo.py
+      - name: Validate runtime
+        run: node --check assets/csi-source-visuals.js
+      - name: Verify save untouched
+        run: test "$(git hash-object index_save.html)" = "$(cat /tmp/save_hash_before)"
+      - name: Commit change
+        run: |
+          git add assets/csi-source-visuals.js
+          git commit -m "Remove sourced photo from VIBEX slides"
+          git push
+      - name: Cleanup helpers
+        run: |
+          git rm .github/scripts/tmp_remove_vibex_photo.py .github/workflows/tmp-remove-vibex-photo.yml
+          git commit -m "Remove temporary VIBEX photo helpers"
+          git push
