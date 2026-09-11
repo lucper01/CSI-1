@@ -82,9 +82,6 @@
       add(slideEl, 'nose', 'anatomy', 'olfaction');
     }
 
-    if (study === 'vibex' && /(intro|methode|method|paradigme|protocole|protocol)/.test(title + ' ' + kicker)) {
-      add(slideEl, 'landscape', 'photo study-photo', 'vibex');
-    }
     if (study === 'twixav' && /(intro|methode|method|paradigme|protocole|protocol)/.test(title + ' ' + kicker)) {
       add(slideEl, 'eye', 'anatomy duo-a', 'twixav-eye');
       add(slideEl, 'ear', 'anatomy duo-b', 'twixav-ear');
