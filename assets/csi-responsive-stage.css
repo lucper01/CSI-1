@@ -1,0 +1,112 @@
+/* CSI_RESPONSIVE_STAGE_4K_V1
+   Large-display presentation mode.
+   Slides keep the 1920x1080 desktop composition and are uniformly scaled up.
+   Smaller viewports keep the existing responsive rules untouched. */
+:root {
+  --csi-stage-scale: 1;
+  --csi-appbar-top: 16px;
+  --csi-menu-top: 70px;
+  --csi-ui-edge: 18px;
+  --csi-footer-bottom: 12px;
+  --csi-toast-bottom: 78px;
+  --csi-progress-height: 4px;
+}
+
+@media (min-width: 1920px) and (min-height: 1080px) {
+  body[data-view="slides"].csi-stage-scaled .deck {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .slide {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: 1920px !important;
+    min-width: 1920px !important;
+    max-width: 1920px !important;
+    height: 1080px !important;
+    min-height: 1080px !important;
+    max-height: 1080px !important;
+    margin: -540px 0 0 -960px !important;
+    transform: scale(var(--csi-stage-scale)) !important;
+    transform-origin: 50% 50% !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .slide.active {
+    display: flex !important;
+  }
+
+  /* One theoretical visual used viewport arithmetic. Freeze it to its 1920px geometry
+     so that it scales with the slide instead of scaling twice on 4K. */
+  body[data-view="slides"].csi-stage-scaled .sela-visual-stack {
+    right: -208px !important;
+    width: 280px !important;
+  }
+
+  /* Presentation chrome follows the same enlargement as the slide canvas. */
+  body[data-view="slides"].csi-stage-scaled .appbar {
+    width: 1500px !important;
+    top: var(--csi-appbar-top) !important;
+    transform: translateX(-50%) scale(var(--csi-stage-scale)) !important;
+    transform-origin: top center !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled #csiV16Menu {
+    width: 1500px !important;
+    top: var(--csi-menu-top) !important;
+    transform: translateX(-50%) scale(var(--csi-stage-scale)) !important;
+    transform-origin: top center !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .deck-footer {
+    max-width: 1160px !important;
+    bottom: var(--csi-footer-bottom) !important;
+    transform: translateX(-50%) scale(var(--csi-stage-scale)) !important;
+    transform-origin: bottom center !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .nav-arrows {
+    right: var(--csi-ui-edge) !important;
+    bottom: var(--csi-ui-edge) !important;
+    transform: scale(var(--csi-stage-scale)) !important;
+    transform-origin: bottom right !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .timer-badge {
+    left: var(--csi-ui-edge) !important;
+    bottom: var(--csi-ui-edge) !important;
+    transform: scale(var(--csi-stage-scale)) !important;
+    transform-origin: bottom left !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .footer-progress {
+    height: var(--csi-progress-height) !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .toast {
+    bottom: var(--csi-toast-bottom) !important;
+    transform: translate(-50%, 18px) scale(var(--csi-stage-scale)) !important;
+    transform-origin: bottom center !important;
+  }
+
+  body[data-view="slides"].csi-stage-scaled .toast.show {
+    transform: translate(-50%, 0) scale(var(--csi-stage-scale)) !important;
+  }
+}
+
+@media print {
+  body.csi-stage-scaled .slide,
+  body.csi-stage-scaled .appbar,
+  body.csi-stage-scaled #csiV16Menu,
+  body.csi-stage-scaled .deck-footer,
+  body.csi-stage-scaled .nav-arrows,
+  body.csi-stage-scaled .timer-badge,
+  body.csi-stage-scaled .toast {
+    transform: none !important;
+  }
+}
