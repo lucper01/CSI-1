@@ -1,0 +1,42 @@
+name: CSI restore speaker notes structure
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-restore-speaker-notes-structure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Freeze save hash
+        run: |
+          echo "SAVED_SHA=$(git hash-object index_save.html)" >> "$GITHUB_ENV"
+      - name: Restore notes organisation
+        run: python tools/tmp_restore_notes_structure.py
+      - name: Validate speaker notes JavaScript
+        run: node --check assets/csi-speaker-notes.js
+      - name: Verify save untouched
+        run: |
+          test "$(git hash-object index_save.html)" = "$SAVED_SHA"
+          grep -q "CSI_THEORY_NOTES_STRUCTURE_V2" assets/csi-speaker-notes.js
+      - name: Commit working change
+        run: |
+          git add assets/csi-speaker-notes.js
+          git commit -m "Restore structured speaker notes for theory slides"
+          git push
+      - name: Remove temporary helpers
+        run: |
+          git rm tools/tmp_restore_notes_structure.py .github/workflows/tmp-restore-speaker-notes-structure.yml
+          git commit -m "Remove temporary speaker notes helpers"
+          git push
