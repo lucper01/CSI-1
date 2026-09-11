@@ -1,0 +1,72 @@
+name: CSI 4K responsive presentation
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-4k-responsive.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Save current presentation before responsive changes
+        run: |
+          cp index.html index_save.html
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save CSI before 4K responsive scaling"
+            git push
+          fi
+          echo "CSI_SAVE_HASH=$(sha256sum index_save.html | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: Add responsive 4K stage
+        run: python .github/scripts/tmp_4k_responsive.py
+
+      - name: Validate responsive assets
+        run: |
+          node --check assets/csi-responsive-stage.js
+          grep -q 'CSI_RESPONSIVE_STAGE_4K_V1' assets/csi-responsive-stage.css
+          grep -q 'CSI_RESPONSIVE_STAGE_4K_V1' assets/csi-responsive-stage.js
+          grep -q 'assets/csi-responsive-stage.css?v=1' index.html
+          grep -q 'assets/csi-responsive-stage.js?v=1' index.html
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('assets/csi-responsive-stage.js').read_text(encoding='utf-8')
+          assert 'BASE_WIDTH = 1920' in s
+          assert 'BASE_HEIGHT = 1080' in s
+          css = Path('assets/csi-responsive-stage.css').read_text(encoding='utf-8')
+          assert 'width: 1920px !important' in css
+          assert 'height: 1080px !important' in css
+          print('Responsive stage validation OK')
+          PY
+
+      - name: Verify protected save stayed frozen after patch
+        run: |
+          test "$(sha256sum index_save.html | cut -d' ' -f1)" = "$CSI_SAVE_HASH"
+
+      - name: Commit responsive presentation update
+        run: |
+          git add index.html assets/csi-responsive-stage.css assets/csi-responsive-stage.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Scale CSI presentation consistently on 4K displays"
+          git push
+
+      - name: Cleanup temporary helpers
+        run: |
+          rm -f .github/scripts/tmp_4k_responsive.py .github/workflows/tmp-4k-responsive.yml
+          git add -u .github/scripts/tmp_4k_responsive.py .github/workflows/tmp-4k-responsive.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Remove temporary 4K responsive helpers"
+          git push
