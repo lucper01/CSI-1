@@ -94,7 +94,6 @@
       add(slideEl, 'nose', 'anatomy', 'twixolf');
     }
     if (study === 'vibolf' && /(intro|methode|method|paradigme|protocole|protocol)/.test(title + ' ' + kicker)) {
-      add(slideEl, 'landscape', 'photo study-photo', 'vibolf-landscape');
       add(slideEl, 'nose', 'anatomy soft', 'vibolf-nose');
     }
 
