@@ -1,0 +1,55 @@
+name: CSI add sourced visuals
+
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-add-source-visuals.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Freeze protected save hash
+        run: git hash-object index_save.html > /tmp/save_hash_before
+
+      - name: Install image dependency
+        run: python -m pip install --quiet pillow
+
+      - name: Add sourced photographs and illustrations
+        run: python .github/scripts/tmp_add_source_visuals.py
+
+      - name: Validate visual runtime
+        run: node --check assets/csi-source-visuals.js
+
+      - name: Verify save untouched
+        run: |
+          test "$(cat /tmp/save_hash_before)" = "$(git hash-object index_save.html)"
+
+      - name: Commit working presentation
+        run: |
+          git add index.html assets/csi-source-visuals.js assets/visuals
+          if git diff --cached --quiet; then
+            echo "No content changes"
+          else
+            git commit -m "Add sourced visual illustrations and photographs"
+            git push
+          fi
+
+      - name: Remove temporary helpers
+        run: |
+          git pull --rebase
+          git rm -f .github/scripts/tmp_add_source_visuals.py .github/workflows/tmp-add-source-visuals.yml
+          git commit -m "Remove temporary sourced visual helpers"
+          git push
