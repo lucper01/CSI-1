@@ -1,0 +1,36 @@
+name: CSI save current state
+
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-save-current-csi.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  save:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Save current presentation
+        run: |
+          cp index.html index_save.html
+          test "$(git hash-object index.html)" = "$(git hash-object index_save.html)"
+          git add index_save.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Save current CSI state"
+            git push
+          fi
+      - name: Remove temporary save workflow
+        run: |
+          rm .github/workflows/tmp-save-current-csi.yml
+          git add -A .github/workflows/tmp-save-current-csi.yml
+          git commit -m "Remove temporary CSI save workflow"
+          git push
