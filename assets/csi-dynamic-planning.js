@@ -1,4 +1,4 @@
-/* CSI_DYNAMIC_PLANNING_TIMELINE_V1 */
+/* CSI_DYNAMIC_PLANNING_TIMELINE_V2 */
 (()=>{
   'use strict';
 
@@ -76,7 +76,9 @@
 
   const deck = document.getElementById('deck');
   if(deck){
-    new MutationObserver(schedule).observe(deck, { childList:true, subtree:true });
+    // Observe only direct slide re-renders. Do not observe the planning slide subtree,
+    // otherwise inserting/removing the current-quarter marker retriggers this observer.
+    new MutationObserver(schedule).observe(deck, { childList:true });
   }
 
   new MutationObserver(schedule).observe(document.documentElement, {
