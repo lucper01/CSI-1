@@ -3944,8 +3944,14 @@ function renderSlides(){
   function currentStep(slide){const idx=Number(slide?.dataset.index||0),value=stepBySlide.get(idx);return Number.isInteger(value)?value:0}
   function setStep(slide,step){const els=decorate(slide,'keep');if(!els.length)return false;step=Math.max(0,Math.min(els.length-1,step));stepBySlide.set(Number(slide.dataset.index||0),step);apply(slide,els,step);return true}
   function navigate(delta){
-    pendingEntry=delta<0?'last':'first';const button=document.getElementById(delta>0?'nextBtn':'prevBtn');if(!button)return;
-    bypassButtons=true;button.click();bypassButtons=false;
+    pendingEntry=delta<0?'last':'first';
+    if(typeof move==='function'){
+      move(delta);
+    }else{
+      const button=document.getElementById(delta>0?'nextBtn':'prevBtn');
+      if(!button)return;
+      bypassButtons=true;button.click();bypassButtons=false;
+    }
     requestAnimationFrame(()=>{decorate(activeSlide(),pendingEntry);pendingEntry='first'});
   }
   function forward(){const slide=activeSlide(),els=decorate(slide,'keep');if(!els.length){navigate(1);return}const step=currentStep(slide);if(step<els.length-1)setStep(slide,step+1);else navigate(1)}
@@ -4073,6 +4079,6 @@ function renderSlides(){
 <!-- CSI_THEORY_CARD_DESCRIPTIONS_TO_NOTES_V1: 8 slides, 69 card descriptions moved to speaker notes -->
 <!-- CSI_DOCTORAL_ACTIVITIES_COMPACT_V1: 3 slides, 26 detail paragraphs moved to speaker notes -->
   <script src="assets/csi-responsive-stage.js?v=2"></script>
-  <script src="assets/csi-dynamic-planning.js?v=1"></script>
+  <script src="assets/csi-dynamic-planning.js?v=2"></script>
 </body>
 </html>
